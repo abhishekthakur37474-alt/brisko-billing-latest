@@ -1,6 +1,6 @@
 [Setup]
 AppName=Brisko Billing
-AppVersion=1.0.0
+AppVersion=2.0.0
 DefaultDirName={localappdata}\BriskoBilling
 DefaultGroupName=Brisko Billing
 UninstallDisplayIcon={app}\brisko_billing.exe
@@ -22,8 +22,8 @@ Source: "D:\briskobillingmy\build\windows\x64\runner\Release\brisko_billing.exe"
 Source: "D:\briskobillingmy\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Brisko Billing"; Filename: "{app}\brisko_billing.exe"
-Name: "{autodesktop}\Brisko Billing"; Filename: "{app}\brisko_billing.exe"; Tasks: desktopicon
+Name: "{group}\Brisko Billing"; Filename: "{app}\brisko_billing.exe"; WorkingDir: "{app}"
+Name: "{autodesktop}\Brisko Billing"; Filename: "{app}\brisko_billing.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\brisko_billing.exe"; Description: "{cm:LaunchProgram,Brisko Billing}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\brisko_billing.exe"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,Brisko Billing}"; Flags: nowait postinstall skipifsilent

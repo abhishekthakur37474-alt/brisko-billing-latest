@@ -66,7 +66,9 @@ class SqliteErrorMapper {
     }
     if (error.isReadOnlyError()) {
       return LocalStorageFailure(
-        'The local database is read-only.',
+        'The local database cannot be saved. Restart the application. If this '
+        'keeps happening, move Brisko Billing out of a protected folder '
+        '(for example Program Files) and open it again.',
         cause: error,
       );
     }

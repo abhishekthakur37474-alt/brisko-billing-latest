@@ -4,7 +4,7 @@ description: "Brisko Billing - point of sale and billing application for the Bri
 publish_to: 'none'
 
 # version: <build-name>+<build-number>
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: ^3.13.3

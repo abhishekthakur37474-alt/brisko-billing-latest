@@ -7,6 +7,7 @@ import '../core/data/connectivity/network_probe.dart';
 import '../core/data/connectivity/polling_connectivity_monitor.dart';
 import '../core/data/local/sqlite/database_factory_initializer.dart';
 import '../core/data/local/sqlite/sqlite_database.dart';
+import '../core/data/local/sqlite/sqlite_databases_path.dart';
 import '../core/data/local/sqlite/sqlite_outbox_store.dart';
 import '../core/data/local/sqlite/sqlite_sync_metadata_store.dart';
 import '../core/data/remote/firebase/firebase_config.dart';
@@ -277,6 +278,15 @@ Future<AppDependencies> bootstrap({
   // platforms sqflite covers natively (macOS, iOS, Android) it is a no-op and the
   // native factory is left exactly as it was. Must run before `database.open()`.
   initializeDatabaseFactory();
+
+  // On Windows/Linux the FFI factory would otherwise put the file under the
+  // process working directory, which is often not writable on a till (Program
+  // Files, a USB, an admin-extracted folder). Reads then succeed and every
+  // save fails with "The local database is read-only." Skip when a caller
+  // already named a file, which is what tests do.
+  if (databasePath == null) {
+    await prepareWritableDatabasesPath();
+  }
 
   final SqliteDatabase database = SqliteDatabase();
   await database.open(path: databasePath);
