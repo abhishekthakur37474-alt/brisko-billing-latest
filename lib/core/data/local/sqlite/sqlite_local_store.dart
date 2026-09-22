@@ -88,7 +88,7 @@ class SqliteLocalStore<T extends SyncableEntity> implements LocalStore<T> {
   @override
   Future<Result<void>> save(T entity) {
     return SqliteErrorMapper.guard<void>(() async {
-      await SqliteUpsert.run(_db, table, entity.toMap());
+      await SqliteUpsert.run(_db, table, _rowToPersist(entity));
       await _enqueue(entity, OutboxOperation.upsert);
       database.notifyTableChanged(table);
     }, context: 'save the record');
@@ -103,7 +103,7 @@ class SqliteLocalStore<T extends SyncableEntity> implements LocalStore<T> {
       // One transaction so a partial write cannot leave the table inconsistent.
       await _db.transaction((Transaction txn) async {
         for (final T entity in entities) {
-          await SqliteUpsert.run(txn, table, entity.toMap());
+          await SqliteUpsert.run(txn, table, _rowToPersist(entity));
         }
       });
       for (final T entity in entities) {
@@ -576,6 +576,21 @@ class SqliteLocalStore<T extends SyncableEntity> implements LocalStore<T> {
     return controller.stream;
   }
 
+  /// The row to persist for a locally-initiated [entity], always marked pending.
+  ///
+  /// A save made here is a change the cloud has not seen, so it must be picked up
+  /// by [findUnsynced] and queued. An entity read back from the database carries
+  /// the `syncState` it was last stored with — for an edit of an already-synced
+  /// row that is `synced` — and writing that straight back would mark a brand-new
+  /// edit as already uploaded, so it would never be sent. Resetting to `pending`
+  /// here keeps every repository's updates syncable without each one remembering
+  /// to. Pulls do not come through here: [applyRemoteChanges] sets `synced`
+  /// itself, which is exactly the distinction this preserves.
+  Map<String, dynamic> _rowToPersist(T entity) {
+    return Map<String, dynamic>.from(entity.toMap())
+      ..[SyncColumns.syncState] = SyncState.pending.name;
+  }
+
   Future<void> _enqueue(T entity, OutboxOperation operation) async {
     final OutboxStore? queue = outbox;
     if (queue == null) {
@@ -587,7 +602,7 @@ class SqliteLocalStore<T extends SyncableEntity> implements LocalStore<T> {
         collection: _collection,
         entityId: entity.id,
         operation: operation,
-        payload: entity.toMap(),
+        payload: _rowToPersist(entity),
         queuedAt: DateTime.now().toUtc(),
       ),
     );

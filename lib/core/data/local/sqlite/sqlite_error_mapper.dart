@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../../error/app_error_reporter.dart';
 import '../../../error/app_failure.dart';
 import '../../../utils/result.dart';
 
@@ -59,19 +60,37 @@ class SqliteErrorMapper {
     // the caller rather than a storage fault, but it is reported as a validation
     // problem because it is recoverable by correcting the input.
     if (error.isDatabaseClosedError()) {
-      return LocalStorageFailure(
+      return _storageFailure(
         'The local database is closed. Restart the application.',
-        cause: error,
+        error,
       );
     }
     if (error.isReadOnlyError()) {
-      return LocalStorageFailure(
+      // A read-only refusal means the file or its folder will not accept a write:
+      // a protected folder, a read-only attribute, a missing ACL, or an old build
+      // still using the working-directory default. Announce it so it is seen at the
+      // terminal, not only returned to a caller that may no longer be on screen.
+      return _storageFailure(
         'The local database cannot be saved. Restart the application. If this '
         'keeps happening, move Brisko Billing out of a protected folder '
         '(for example Program Files) and open it again.',
-        cause: error,
+        error,
       );
     }
-    return LocalStorageFailure('Could not $context.', cause: error);
+    return _storageFailure('Could not $context.', error);
+  }
+
+  /// Builds a [LocalStorageFailure] and announces it on the application surface.
+  ///
+  /// Reporting here, at the one boundary every SQLite write passes through, means a
+  /// storage fault reaches the operator even when the screen that started the write
+  /// has gone or was never there.
+  static AppFailure _storageFailure(String message, DatabaseException error) {
+    final LocalStorageFailure failure = LocalStorageFailure(
+      message,
+      cause: error,
+    );
+    AppErrorReporter.instance.report(failure);
+    return failure;
   }
 }

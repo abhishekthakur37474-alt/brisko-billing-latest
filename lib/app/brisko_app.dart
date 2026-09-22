@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/error/app_error_reporter.dart';
+import '../core/error/app_failure.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/controllers/auth_controller.dart';
 import '../features/billing/domain/repositories/checkout_repository.dart';
@@ -150,7 +154,75 @@ class BriskoApp extends StatelessWidget {
         initialRoute: AppRoutes.home,
         routes: AppRoutes.routes(),
         onUnknownRoute: AppRoutes.onUnknownRoute,
+        // Sits above every route, including the login gate, so a failure reported
+        // from anywhere in the application is shown on screen rather than logged.
+        builder: (BuildContext context, Widget? child) =>
+            _GlobalErrorListener(child: child ?? const SizedBox.shrink()),
       ),
     );
   }
+}
+
+/// Shows any failure announced on [AppErrorReporter] as a snack bar.
+///
+/// The application normally renders a failure on the screen that asked for the work.
+/// This is the backstop for the ones with no such screen, so the operator sees the
+/// error at the terminal instead of it disappearing into a file.
+class _GlobalErrorListener extends StatefulWidget {
+  const _GlobalErrorListener({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_GlobalErrorListener> createState() => _GlobalErrorListenerState();
+}
+
+class _GlobalErrorListenerState extends State<_GlobalErrorListener> {
+  StreamSubscription<AppFailure>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = AppErrorReporter.instance.failures.listen(_show);
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel());
+    _subscription = null;
+    super.dispose();
+  }
+
+  void _show(AppFailure failure) {
+    if (!mounted) {
+      return;
+    }
+    // Defer to the next frame: a report can arrive during a build (a read on start-up,
+    // a reload after a save), and showing a messenger mid-build would throw.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) {
+        return;
+      }
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              onPressed: messenger.hideCurrentSnackBar,
+            ),
+          ),
+        );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

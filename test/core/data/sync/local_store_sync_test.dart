@@ -136,4 +136,30 @@ void main() {
       expect(all.where((Customer x) => x.id == 'c6'), hasLength(1));
     });
   });
+
+  group('a local save re-queues an already-synced record', () {
+    test('an edit of a synced row is pending again and found unsynced', () async {
+      final DateTime created = DateTime.utc(2026, 1, 1, 9);
+      await customers.save(customerAt('c7', created));
+      await customers.markSynced('c7', created);
+      expect(await storedState('c7'), SyncState.synced.name);
+
+      // What an editor does: read the stored row back, then save it with a new
+      // timestamp. `copyWith` preserves the stored syncState, which is `synced`.
+      final Customer stored = (await customers.findById('c7')).valueOrNull!;
+      final Customer edited = stored.copyWith(
+        name: 'Renamed',
+        updatedAt: DateTime.utc(2026, 1, 1, 10),
+      );
+      expect(edited.syncState, SyncState.synced);
+
+      final Result<void> result = await customers.save(edited);
+      expect(result.isOk, isTrue);
+
+      expect(await storedState('c7'), SyncState.pending.name);
+      final List<Customer> unsynced =
+          (await customers.findUnsynced()).valueOrNull!;
+      expect(unsynced.map((Customer c) => c.id), contains('c7'));
+    });
+  });
 }
