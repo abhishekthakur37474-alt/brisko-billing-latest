@@ -133,7 +133,7 @@ void main() {
   Future<Order> sell({required MenuItemVariant size, int quantity = 1}) async {
     final Cart cart = await SeededCart.cartOf(
       menu,
-      category: 'Veg Pizza',
+      category: 'SIMPLY VEG',
       item: 'Cheese Pizza',
       size: size.name,
       quantity: quantity,
@@ -244,14 +244,14 @@ void main() {
           .then((controller) async {
             await SeededCart.add(
               controller,
-              category: 'Veg Pizza',
+              category: 'SIMPLY VEG',
               item: 'Cheese Pizza',
               size: 'Medium',
               quantity: 2,
             );
             await SeededCart.add(
               controller,
-              category: 'Veg Pizza',
+              category: 'SIMPLY VEG',
               item: 'Cheese Pizza',
               size: 'Large',
             );
@@ -423,13 +423,13 @@ void main() {
             .then((controller) async {
               await SeededCart.add(
                 controller,
-                category: 'Veg Pizza',
+                category: 'SIMPLY VEG',
                 item: 'Cheese Pizza',
                 size: 'Medium',
               );
               await SeededCart.add(
                 controller,
-                category: 'Veg Pizza',
+                category: 'SIMPLY VEG',
                 item: 'Cheese Pizza',
                 size: 'Large',
               );
@@ -754,7 +754,7 @@ void main() {
 
       final Cart cart = await SeededCart.cartOf(
         menu,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese & Onion',
         size: sizes.first.name,
       );

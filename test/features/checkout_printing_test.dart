@@ -83,7 +83,7 @@ void main() {
     Future<CheckoutController> readyToCharge() async {
       await SeededCart.add(
         billing,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
         options: <String>['Extra Cheese'],

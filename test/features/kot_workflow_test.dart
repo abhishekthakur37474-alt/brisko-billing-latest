@@ -198,20 +198,20 @@ void main() {
 
       await SeededCart.add(
         controller,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
         options: <String>['Extra Cheese'],
       );
       await SeededCart.add(
         controller,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Large',
       );
       await SeededCart.add(
         controller,
-        category: 'Side Orders',
+        category: 'SIDE ORDER',
         item: 'French Fries',
         options: <String>['Ketchup'],
       );

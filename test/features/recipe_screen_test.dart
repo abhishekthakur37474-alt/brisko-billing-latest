@@ -147,7 +147,7 @@ void main() {
       await pumpRecipes(tester);
 
       // The seeded categories and dishes, not a sample list.
-      expect(find.text('Veg Pizza'), findsOneWidget);
+      expect(find.text('SIMPLY VEG'), findsOneWidget);
       expect(find.text('Cheese Pizza'), findsOneWidget);
       expect(find.text('No recipe'), findsWidgets);
       expect(find.text('Recipe configured'), findsNothing);

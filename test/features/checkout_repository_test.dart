@@ -167,7 +167,7 @@ void main() {
       // (250 + 70) x 2 = 640
       await SeededCart.add(
         billing,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
         options: <String>['Extra Cheese'],
@@ -176,14 +176,14 @@ void main() {
       // 400
       await SeededCart.add(
         billing,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Large',
       );
       // 70 + 10 = 80
       await SeededCart.add(
         billing,
-        category: 'Side Orders',
+        category: 'SIDE ORDER',
         item: 'French Fries',
         options: <String>['Ketchup'],
       );
@@ -584,7 +584,7 @@ void main() {
       addTearDown(billing.dispose);
       await SeededCart.add(
         billing,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
         options: <String>['Extra Cheese'],
@@ -616,7 +616,7 @@ void main() {
       addTearDown(billing.dispose);
       await SeededCart.add(
         billing,
-        category: 'Side Orders',
+        category: 'SIDE ORDER',
         item: 'French Fries',
         options: <String>['Ketchup'],
       );

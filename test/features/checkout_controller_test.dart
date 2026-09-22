@@ -68,7 +68,7 @@ void main() {
   /// A Medium Cheese Pizza with Extra Cheese in the live cart: 250 + 70 = 320.
   Future<void> ringUpPizza({int quantity = 1}) => SeededCart.add(
     billing,
-    category: 'Veg Pizza',
+    category: 'SIMPLY VEG',
     item: 'Cheese Pizza',
     size: 'Medium',
     options: <String>['Extra Cheese'],
@@ -179,7 +179,7 @@ void main() {
       // The cashier adds another item to the billing screen behind the flow.
       await SeededCart.add(
         billing,
-        category: 'Side Orders',
+        category: 'SIDE ORDER',
         item: 'French Fries',
       );
 

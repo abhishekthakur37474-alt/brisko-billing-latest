@@ -40,7 +40,7 @@ void main() {
   Future<void> addPizza(BillingController controller, {int quantity = 1}) =>
       SeededCart.add(
         controller,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
         options: <String>['Extra Cheese'],

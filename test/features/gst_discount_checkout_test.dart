@@ -87,7 +87,7 @@ void main() {
 
   Future<void> ringUpPizza({int quantity = 1}) => SeededCart.add(
     billing,
-    category: 'Veg Pizza',
+    category: 'SIMPLY VEG',
     item: 'Cheese Pizza',
     size: 'Medium',
     options: <String>['Extra Cheese'],

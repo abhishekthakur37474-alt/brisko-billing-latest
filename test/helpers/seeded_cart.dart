@@ -104,7 +104,7 @@ class SeededCart {
     final BillingController controller = await SeededCart.controller(menu);
     await add(
       controller,
-      category: 'Veg Pizza',
+      category: 'SIMPLY VEG',
       item: 'Cheese Pizza',
       size: 'Medium',
       options: <String>['Extra Cheese'],

@@ -62,7 +62,7 @@ void main() {
 
   /// Configures a pizza at a size, which is the path the counter takes most often.
   Future<void> configurePizza(String pizza, String size) async {
-    await configure('Veg Pizza', pizza);
+    await configure('SIMPLY VEG', pizza);
     await controller.selectVariant(sizeNamed(size));
   }
 
@@ -71,18 +71,22 @@ void main() {
       await controller.loadMenu();
 
       expect(controller.categories.map((MenuCategory c) => c.name), <String>[
-        'Veg Pizza',
-        'Burger',
-        'Wraps',
-        'Taco',
-        'Sandwich',
-        'Coffee',
-        'Shakes / Mocktails',
-        'Family Combos',
-        'Twin Treat Pizza Combo',
-        'Burger Combo',
-        'Side Orders',
-        'Cold Drinks',
+        'SIMPLY VEG',
+        'VEG DELIGHT',
+        'VEG TREAT',
+        'VEG SPECIAL',
+        'VEG FEAST PIZZA',
+        'SINGLE TOPPING PIZZA',
+        'DOUBLE TOPPING PIZZA',
+        'WRAPS',
+        'TACO',
+        'COFFEE',
+        'SANDWICH',
+        'BURGER',
+        'SHAKE / MOCKTAIL',
+        'FAMILY COMBO',
+        'SET OF 4',
+        'SIDE ORDER',
       ]);
       expect(controller.hasError, isFalse);
     });
@@ -101,7 +105,7 @@ void main() {
     test('the first category is opened so the screen is never blank', () async {
       await controller.loadMenu();
 
-      expect(controller.selectedCategory?.name, 'Veg Pizza');
+      expect(controller.selectedCategory?.name, 'SIMPLY VEG');
       expect(controller.items, isNotEmpty);
       expect(
         controller.items.map((MenuItem item) => item.name),
@@ -154,7 +158,7 @@ void main() {
 
       expect(controller.isConfiguring, isTrue);
 
-      await controller.selectCategory(categoryNamed('Side Orders'));
+      await controller.selectCategory(categoryNamed('SIDE ORDER'));
 
       expect(controller.isConfiguring, isFalse);
       expect(controller.configuringItem, isNull);
@@ -176,7 +180,7 @@ void main() {
       ]);
       expect(sizeNamed('Small').price, Money.parse('130'));
       expect(sizeNamed('Medium').price, Money.parse('250'));
-      expect(sizeNamed('Large').price, Money.parse('400'));
+      expect(sizeNamed('Large').price, Money.parse('390'));
     });
 
     test('no options and no price until a size is chosen', () async {
@@ -234,61 +238,68 @@ void main() {
       expect(controller.draftUnitPrice, Money.parse('490'));
     });
 
-    test('a Large is offered no crust upgrade at all', () async {
-      // The printed menu prices Thin Crust and Cheese Burst for Small and Medium
-      // only. No Large price exists, so none is invented and neither is offered.
+    test('a Large is offered the pizza add-ons priced for Large', () async {
       await configurePizza('Cheese Pizza', 'Large');
 
+      // The specification prices every pizza add-on for all three sizes, so a Large
+      // is offered the full set rather than the crust-only subset the old menu had.
       expect(optionNames(), <String>[
         'Extra Cheese',
-        'Extra Toppings',
+        'Cheese Burst',
+        'Onion',
+        'Capsicum',
+        'Mushroom',
+        'Tomato',
+        'Sweet Corn',
+        'Olive',
+        'Paneer',
+        'Jalapeno',
+        'Red Paprika',
         'Ketchup',
       ]);
+    });
+
+    test('no crust upgrade exists on the specification menu', () async {
+      await configurePizza('Cheese Pizza', 'Medium');
+
       expect(optionNames(), isNot(contains('Thin Crust')));
-      expect(optionNames(), isNot(contains('Cheese Burst')));
-    });
-
-    test('Thin Crust cannot be selected on a Large', () async {
-      await configurePizza('Cheese Pizza', 'Medium');
-      final MenuItemOption mediumThinCrust = optionNamed('Thin Crust');
-
-      await controller.selectVariant(sizeNamed('Large'));
-
-      // Even handed the exact option object priced for another size, the controller
-      // refuses it, because the repository did not offer it for this selection.
-      controller.toggleOption(mediumThinCrust);
-
-      expect(controller.isOptionSelected(mediumThinCrust.id), isFalse);
-      expect(controller.selectedOptions, isEmpty);
-      expect(controller.draftOptionsTotal, Money.zero);
-      expect(controller.draftUnitPrice, Money.parse('400'));
-    });
-
-    test('Cheese Burst cannot be selected on a Large', () async {
-      await configurePizza('Cheese Pizza', 'Medium');
-      final MenuItemOption mediumCheeseBurst = optionNamed('Cheese Burst');
-
-      await controller.selectVariant(sizeNamed('Large'));
-      controller.toggleOption(mediumCheeseBurst);
-
-      expect(controller.isOptionSelected(mediumCheeseBurst.id), isFalse);
-      expect(controller.selectedOptions, isEmpty);
-      expect(controller.draftUnitPrice, Money.parse('400'));
-    });
-
-    test('a crust replaces another crust rather than stacking', () async {
-      await configurePizza('Cheese Pizza', 'Medium');
-
-      controller.toggleOption(optionNamed('Thin Crust'));
-      expect(controller.draftUnitPrice, Money.parse('300'));
-
-      controller.toggleOption(optionNamed('Cheese Burst'));
-
       expect(
-        controller.selectedOptions.map((MenuItemOption o) => o.name),
-        <String>['Cheese Burst'],
+        controller.availableOptions
+            .any((MenuItemOption o) => o.optionType == MenuOptionType.crust),
+        isFalse,
       );
-      expect(controller.draftUnitPrice, Money.parse('340'));
+    });
+
+    test(
+      'a modifier priced for another size cannot be applied to this one',
+      () async {
+        await configurePizza('Cheese Pizza', 'Medium');
+        final MenuItemOption mediumExtraCheese = optionNamed('Extra Cheese');
+        expect(mediumExtraCheese.price, Money.parse('70'));
+
+        await controller.selectVariant(sizeNamed('Large'));
+
+        // Even handed the exact option object priced for another size, the controller
+        // refuses it, because the repository did not offer it for this selection.
+        controller.toggleOption(mediumExtraCheese);
+
+        expect(controller.isOptionSelected(mediumExtraCheese.id), isFalse);
+        expect(controller.selectedOptions, isEmpty);
+        expect(controller.draftOptionsTotal, Money.zero);
+        expect(controller.draftUnitPrice, Money.parse('390'));
+      },
+    );
+
+    test('Cheese Burst is offered on every size at its own price', () async {
+      await configurePizza('Cheese Pizza', 'Large');
+
+      final MenuItemOption cheeseBurst = optionNamed('Cheese Burst');
+      expect(cheeseBurst.price, Money.parse('90'));
+
+      controller.toggleOption(cheeseBurst);
+
+      expect(controller.selectedOptions.single.name, 'Cheese Burst');
+      expect(controller.draftUnitPrice, Money.parse('480'));
     });
 
     test('add-ons stack with each other and with a crust', () async {

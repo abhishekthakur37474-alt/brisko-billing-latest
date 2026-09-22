@@ -228,18 +228,18 @@ void main() {
       addTearDown(controller.dispose);
       await SeededCart.add(
         controller,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
       );
       await SeededCart.add(
         controller,
-        category: 'Side Orders',
+        category: 'SIDE ORDER',
         item: 'French Fries',
       );
       await SeededCart.add(
         controller,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Large',
       );

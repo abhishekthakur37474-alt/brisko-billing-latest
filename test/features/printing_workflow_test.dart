@@ -136,7 +136,7 @@ void main() {
   }) async {
     await SeededCart.add(
       billing,
-      category: 'Veg Pizza',
+      category: 'SIMPLY VEG',
       item: 'Cheese Pizza',
       size: 'Medium',
       options: <String>['Extra Cheese'],
@@ -862,7 +862,7 @@ void main() {
     Future<CheckoutController> settledCheckout(PrintService printing) async {
       await SeededCart.add(
         billing,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
       );
@@ -980,7 +980,7 @@ void main() {
 
       await SeededCart.add(
         billing,
-        category: 'Veg Pizza',
+        category: 'SIMPLY VEG',
         item: 'Cheese Pizza',
         size: 'Medium',
       );

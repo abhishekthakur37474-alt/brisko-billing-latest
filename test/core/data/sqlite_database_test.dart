@@ -32,9 +32,10 @@ void main() {
     test('reports the schema version the migrations define', () async {
       final int version = await database.database.getVersion();
       expect(version, SqliteDatabase.schemaVersion);
-      // Fourteen migrations: schema through expenses, the RTDB resync, then
-      // the customer-name snapshot on a settled bill.
-      expect(SqliteDatabase.schemaVersion, 14);
+      // Fifteen migrations: schema through expenses, the RTDB resync, then
+      // the customer-name snapshot on a settled bill and the supplied menu
+      // specification.
+      expect(SqliteDatabase.schemaVersion, 15);
     });
 
     test('creates every table the POS needs', () async {

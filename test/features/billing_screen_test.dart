@@ -96,8 +96,8 @@ void main() {
       await pumpBillingScreen(tester);
 
       expect(find.text('Categories'), findsOneWidget);
-      expect(find.text('Veg Pizza'), findsOneWidget);
-      expect(find.text('Side Orders'), findsOneWidget);
+      expect(find.text('SIMPLY VEG'), findsOneWidget);
+      expect(find.text('SIDE ORDER'), findsOneWidget);
       expect(find.text('Cold Drinks'), findsOneWidget);
 
       // The first category is open, so its items are on screen with their prices.
@@ -112,7 +112,7 @@ void main() {
     ) async {
       await pumpBillingScreen(tester);
 
-      await tap(tester, find.text('Side Orders'));
+      await tap(tester, find.text('SIDE ORDER'));
 
       expect(find.text('French Fries'), findsOneWidget);
       expect(find.text('Cheese Pizza'), findsNothing);
@@ -291,7 +291,7 @@ void main() {
       await pumpBillingScreen(tester);
       await addMediumCheesePizzaWithExtraCheese(tester);
 
-      await tap(tester, find.text('Side Orders'));
+      await tap(tester, find.text('SIDE ORDER'));
       await tap(tester, find.text('French Fries'));
       await tap(tester, find.widgetWithText(FilledButton, 'Add to bill'));
 
