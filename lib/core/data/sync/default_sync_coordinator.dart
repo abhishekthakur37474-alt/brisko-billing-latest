@@ -128,6 +128,9 @@ class DefaultSyncCoordinator implements SyncCoordinator {
   SyncStatusSnapshot get currentStatus => _current;
 
   @override
+  bool get isStarted => _started;
+
+  @override
   void start() {
     if (_started || _disposed) {
       return;

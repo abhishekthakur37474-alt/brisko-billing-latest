@@ -24,8 +24,20 @@ class _FakeCoordinator implements SyncCoordinator {
   @override
   SyncStatusSnapshot get currentStatus => _current;
 
+  bool _started = false;
+
   @override
-  void start() {}
+  bool get isStarted => _started;
+
+  @override
+  void start() {
+    _started = true;
+  }
+
+  @override
+  Future<void> stop() async {
+    _started = false;
+  }
 
   @override
   Future<Result<void>> syncNow() async {

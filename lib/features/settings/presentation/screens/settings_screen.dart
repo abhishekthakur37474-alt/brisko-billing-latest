@@ -11,6 +11,7 @@ import '../../../printing/presentation/controllers/printer_controller.dart';
 import '../../domain/active_pos_settings.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/services/operational_data_wiper.dart';
+import '../../domain/services/till_backup_store.dart';
 import '../controllers/data_reset_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings_form.dart';
@@ -30,8 +31,8 @@ import '../widgets/settings_notices.dart';
 /// addresses while the screen still offers somewhere to configure one.
 ///
 /// There is no tax rate and no discount, because nothing in this build charges either and
-/// an input that changes nothing is worse than no input. There is no sync trigger, no
-/// account and no backup, for the same reason.
+/// an input that changes nothing is worse than no input. Cloud sync and the signed-in
+/// account live in their own sections, supplied by those modules.
 ///
 /// ## How it is wired
 ///
@@ -78,6 +79,8 @@ class SettingsScreen extends StatelessWidget {
           create: (BuildContext context) => DataResetController(
             wiper: context.read<OperationalDataWiper>(),
             billing: context.read<BillingController>(),
+            settings: context.read<SettingsRepository>(),
+            backups: context.read<TillBackupStore>(),
           ),
         ),
       ],

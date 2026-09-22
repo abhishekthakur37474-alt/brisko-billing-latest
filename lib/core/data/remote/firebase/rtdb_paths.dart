@@ -29,13 +29,20 @@ class RtdbPaths {
     SqliteTables.kotItemOptions: 'kotItemOptions',
   };
 
+  /// Local table names that have a cloud node, in no particular order.
+  static Iterable<String> get syncedTables => _byTable.keys;
+
   /// The RTDB node name for [table]. Falls back to the table name itself so an
   /// unmapped table still syncs somewhere sane rather than failing.
   static String resolve(String table) => _byTable[table] ?? table;
 
+  /// `restaurants/{restaurantId}`
+  static String restaurant(String restaurantId) =>
+      'restaurants/$restaurantId';
+
   /// `restaurants/{restaurantId}/{node}`
   static String collection(String restaurantId, String table) =>
-      'restaurants/$restaurantId/${resolve(table)}';
+      '${restaurant(restaurantId)}/${resolve(table)}';
 
   /// `restaurants/{restaurantId}/{node}/{id}`
   static String record(String restaurantId, String table, String id) =>

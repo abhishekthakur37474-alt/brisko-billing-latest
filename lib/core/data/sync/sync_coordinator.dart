@@ -25,6 +25,13 @@ abstract interface class SyncCoordinator {
   /// Begins automatic synchronisation: timer plus connectivity-triggered runs.
   void start();
 
+  /// True after [start] and until [stop] or [dispose].
+  bool get isStarted;
+
+  /// Pauses automatic cycles without disposing. Used while till data is being
+  /// cleared so a pull cannot race the wipe. Safe to call when not started.
+  Future<void> stop();
+
   /// Runs one push-then-pull cycle immediately. Used by a manual "sync now"
   /// action in settings.
   Future<Result<void>> syncNow();

@@ -58,12 +58,14 @@ import '../features/printing/domain/services/print_job_factory.dart';
 import '../features/printing/domain/services/print_service.dart';
 import '../features/reports/data/repositories/sqlite_sales_report_repository.dart';
 import '../features/reports/domain/repositories/sales_report_repository.dart';
+import '../features/settings/data/file_till_backup_store.dart';
 import '../features/settings/data/repositories/sqlite_settings_repository.dart';
 import '../features/settings/data/sqlite_operational_data_wiper.dart';
 import '../features/settings/domain/active_pos_settings.dart';
 import '../features/settings/domain/models/pos_settings.dart';
 import '../features/settings/domain/repositories/settings_repository.dart';
 import '../features/settings/domain/services/operational_data_wiper.dart';
+import '../features/settings/domain/services/till_backup_store.dart';
 import 'sync/cloud_sync_activation.dart';
 import 'sync/sync_endpoints.dart';
 
@@ -94,9 +96,10 @@ class AppDependencies {
     required this.kotRepository,
     required this.expenseRepository,
     required this.salesReportRepository,
-    required this.settingsRepository,
-    required this.operationalDataWiper,
-    required this.activeSettings,
+      required this.settingsRepository,
+      required this.operationalDataWiper,
+      required this.tillBackupStore,
+      required this.activeSettings,
     required this.printer,
     required this.activePrinter,
     required this.activePrintProfile,
@@ -192,8 +195,12 @@ class AppDependencies {
   final SettingsRepository settingsRepository;
 
   /// Removes bills, the menu, orders and the rest of the till's working data
-  /// without touching the sign-in or the settings table.
+  /// without touching the sign-in or the settings table. Backs up first, then
+  /// clears SQLite and the cloud restaurant node.
   final OperationalDataWiper operationalDataWiper;
+
+  /// Writes the JSON backup taken before a till wipe, and copies it to Downloads.
+  final TillBackupStore tillBackupStore;
 
   /// The configuration this terminal is running with, read once at start-up.
   ///
@@ -459,7 +466,12 @@ Future<AppDependencies> bootstrap({
     operationalDataWiper: SqliteOperationalDataWiper(
       database: database,
       outbox: outbox,
+      settings: settings,
+      backups: FileTillBackupStore(),
+      rtdb: firebaseFactory?.restClient,
+      syncCoordinator: syncCoordinator,
     ),
+    tillBackupStore: FileTillBackupStore(),
     activeSettings: activeSettings,
     printer: printer,
     activePrinter: printer,

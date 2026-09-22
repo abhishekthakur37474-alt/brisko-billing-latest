@@ -267,6 +267,100 @@ void main() {
           expect(await byId('remote-3'), isNotNull);
         },
       );
+
+      test(
+        'collapsing a duplicate order that still has children does not fail '
+        'with FOREIGN KEY constraint failed',
+        () async {
+          // The reported Windows pull failure: cloud delete of order
+          // `ord-muaro0vsg7wlftm0` hit SQLITE 1811 because local children
+          // (order_items, payments, kot_records, …) still referenced it under
+          // ON DELETE RESTRICT. Same shape here: a newer remote bill shares
+          // orderNumber with a local bill that already has a line.
+          await orders.save(
+            orderAt('local-1', 'A-FK', DateTime.utc(2026, 1, 1)),
+          );
+          await database.database.insert(SqliteTables.orderItems, <String, Object?>{
+            'id': 'item-local',
+            'createdAt': 0,
+            'updatedAt': 0,
+            'isDeleted': 0,
+            'syncState': 'synced',
+            'orderId': 'local-1',
+            'itemNameSnapshot': 'Farmhouse',
+            'quantity': 1,
+            'unitPricePaise': 10000,
+            'discountAmountPaise': 0,
+            'taxAmountPaise': 0,
+            'totalAmountPaise': 10000,
+          });
+          await database.database.insert(
+            SqliteTables.orderItemOptions,
+            <String, Object?>{
+              'id': 'opt-local',
+              'createdAt': 0,
+              'updatedAt': 0,
+              'isDeleted': 0,
+              'syncState': 'synced',
+              'orderItemId': 'item-local',
+              'optionNameSnapshot': 'Extra Cheese',
+              'pricePaise': 2000,
+              'quantity': 1,
+            },
+          );
+          await database.database.insert(SqliteTables.payments, <String, Object?>{
+            'id': 'pay-local',
+            'createdAt': 0,
+            'updatedAt': 0,
+            'isDeleted': 0,
+            'syncState': 'synced',
+            'orderId': 'local-1',
+            'paymentMethod': PaymentMethod.cash.name,
+            'amountPaise': 10000,
+            'reference': null,
+            'status': PaymentStatus.completed.name,
+          });
+
+          final Result<RemoteMergeReport> result = await orders
+              .applyRemoteChanges(<Order>[
+                orderAt('remote-1', 'A-FK', DateTime.utc(2026, 1, 2)),
+              ]);
+
+          expect(
+            result.isOk,
+            isTrue,
+            reason: 'must not fail with FOREIGN KEY constraint failed',
+          );
+          expect(result.valueOrNull!.applied, 1);
+          expect(await byId('remote-1'), isNotNull);
+          expect(await byId('local-1'), isNull);
+
+          final List<Map<String, Object?>> leftoverItems = await database
+              .database
+              .query(
+                SqliteTables.orderItems,
+                where: 'orderId = ?',
+                whereArgs: <Object?>['local-1'],
+              );
+          expect(leftoverItems, isEmpty);
+          final List<Map<String, Object?>> leftoverOptions = await database
+              .database
+              .query(
+                SqliteTables.orderItemOptions,
+                where: 'id = ?',
+                whereArgs: <Object?>['opt-local'],
+              );
+          expect(leftoverOptions, isEmpty);
+          final List<Map<String, Object?>> leftoverPayments = await database
+              .database
+              .query(
+                SqliteTables.payments,
+                where: 'orderId = ?',
+                whereArgs: <Object?>['local-1'],
+              );
+          expect(leftoverPayments, isEmpty);
+        },
+      );
     },
   );
 

@@ -87,4 +87,13 @@ class SettingKeys {
 
   /// `QrErrorCorrection` name: the redundancy built into the printed symbol.
   static const String printerQrErrorCorrection = 'printer.qrErrorCorrection';
+
+  /// UTC milliseconds of the last till backup written before a data clear.
+  static const String lastBackupAt = 'data.lastBackupAt';
+
+  /// Absolute path of that backup file, so Settings can copy it to Downloads.
+  static const String lastBackupPath = 'data.lastBackupPath';
+
+  /// UTC milliseconds of the last time operational data was physically cleared.
+  static const String lastClearedAt = 'data.lastClearedAt';
 }

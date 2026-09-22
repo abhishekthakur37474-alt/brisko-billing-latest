@@ -26,6 +26,7 @@ import '../features/reports/domain/repositories/sales_report_repository.dart';
 import '../features/settings/domain/active_pos_settings.dart';
 import '../features/settings/domain/repositories/settings_repository.dart';
 import '../features/settings/domain/services/operational_data_wiper.dart';
+import '../features/settings/domain/services/till_backup_store.dart';
 import 'bootstrap.dart';
 import 'routes/app_routes.dart';
 import 'shell/shell_controller.dart';
@@ -123,6 +124,7 @@ class BriskoApp extends StatelessWidget {
         Provider<OperationalDataWiper>.value(
           value: dependencies.operationalDataWiper,
         ),
+        Provider<TillBackupStore>.value(value: dependencies.tillBackupStore),
         // The configuration read at start-up. Checkout reads the default order type from
         // here rather than querying the settings table while a screen is building.
         Provider<ActivePosSettings>.value(value: dependencies.activeSettings),

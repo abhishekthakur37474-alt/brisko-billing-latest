@@ -106,6 +106,10 @@ class FirebaseRemoteStoreFactory implements RemoteStoreFactory {
   /// session into it on login and clears it on logout.
   final FirebaseAuthSession session;
 
+  /// Shared REST client. The till wipe uses it to snapshot and empty the restaurant
+  /// node; ordinary sync never sees it.
+  RtdbRestClient get restClient => _client;
+
   @override
   RemoteStore<T> create<T extends SyncableEntity>(
     String table,

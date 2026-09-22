@@ -260,12 +260,13 @@ class SqliteLocalStore<T extends SyncableEntity> implements LocalStore<T> {
       // stands, so the superseded local duplicate is removed inside this same
       // transaction before the newer version is written in its place. A same-id
       // collision needs no delete: the upsert updates it in place.
+      //
+      // The delete is cascaded: child tables use ON DELETE RESTRICT, so a bare
+      // DELETE of an order that still has items, payments or kitchen slips would
+      // fail the whole pull with SQLITE 1811. Descendants of the superseded
+      // duplicate are removed with it; the remote graph arrives on later pulls.
       if (conflictId != entity.id) {
-        await txn.delete(
-          table,
-          where: '${SyncColumns.id} = ?',
-          whereArgs: <Object?>[conflictId],
-        );
+        await _deleteRowCascade(txn, table, conflictId);
       }
     }
 
@@ -459,6 +460,89 @@ class SqliteLocalStore<T extends SyncableEntity> implements LocalStore<T> {
     return result;
   }
 
+  /// Physically removes [id] from [targetTable], after first removing every row
+  /// that references it (and those rows' own descendants).
+  ///
+  /// Required because the schema uses `ON DELETE RESTRICT`: a parent cannot be
+  /// deleted while any child still points at it. Used only when last-write-wins
+  /// collapses a superseded local duplicate onto a newer remote id — the remote
+  /// graph of children is applied on subsequent collection pulls.
+  Future<void> _deleteRowCascade(
+    Transaction txn,
+    String targetTable,
+    String id,
+  ) async {
+    for (final _IncomingForeignKey child in await _incomingForeignKeys(
+      txn,
+      targetTable,
+    )) {
+      final List<Map<String, Object?>> dependents = await txn.query(
+        child.childTable,
+        columns: <String>[SyncColumns.id],
+        where: '${child.fromColumn} = ?',
+        whereArgs: <Object?>[id],
+      );
+      for (final Map<String, Object?> dependent in dependents) {
+        final String? childId = dependent[SyncColumns.id] as String?;
+        if (childId == null) {
+          continue;
+        }
+        await _deleteRowCascade(txn, child.childTable, childId);
+      }
+    }
+    await txn.delete(
+      targetTable,
+      where: '${SyncColumns.id} = ?',
+      whereArgs: <Object?>[id],
+    );
+  }
+
+  /// Incoming foreign keys that point *at* [targetTable], across the whole
+  /// schema. Cached per (store, target) because the schema does not change while
+  /// the database is open.
+  final Map<String, List<_IncomingForeignKey>> _incomingForeignKeysCache =
+      <String, List<_IncomingForeignKey>>{};
+
+  Future<List<_IncomingForeignKey>> _incomingForeignKeys(
+    Transaction txn,
+    String targetTable,
+  ) async {
+    final List<_IncomingForeignKey>? cached =
+        _incomingForeignKeysCache[targetTable];
+    if (cached != null) {
+      return cached;
+    }
+
+    final List<_IncomingForeignKey> result = <_IncomingForeignKey>[];
+    final List<Map<String, Object?>> tables = await txn.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    );
+    for (final Map<String, Object?> tableRow in tables) {
+      final String? childTable = tableRow['name'] as String?;
+      if (childTable == null) {
+        continue;
+      }
+      final List<Map<String, Object?>> fks = await txn.rawQuery(
+        'PRAGMA foreign_key_list($childTable)',
+      );
+      for (final Map<String, Object?> fk in fks) {
+        if ((fk['table'] as String?) != targetTable) {
+          continue;
+        }
+        final String? fromColumn = fk['from'] as String?;
+        if (fromColumn == null) {
+          continue;
+        }
+        result.add(
+          _IncomingForeignKey(childTable: childTable, fromColumn: fromColumn),
+        );
+      }
+    }
+
+    _incomingForeignKeysCache[targetTable] = result;
+    return result;
+  }
+
   @override
   Stream<List<T>> watchAll() {
     late final StreamController<List<T>> controller;
@@ -547,6 +631,17 @@ class _ForeignKey {
   final String parentTable;
   final String fromColumn;
   final String toColumn;
+}
+
+/// A foreign key on some other table that references this one.
+class _IncomingForeignKey {
+  const _IncomingForeignKey({
+    required this.childTable,
+    required this.fromColumn,
+  });
+
+  final String childTable;
+  final String fromColumn;
 }
 
 /// Encodes and decodes the JSON payload column of the outbox table.

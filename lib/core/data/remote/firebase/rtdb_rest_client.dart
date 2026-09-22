@@ -102,6 +102,36 @@ class RtdbRestClient {
     });
   }
 
+  /// Reads the whole restaurant node as a JSON object.
+  ///
+  /// Used to snapshot the cloud before a till wipe. An empty or missing node is
+  /// an empty map, not a failure — a new restaurant has nothing to back up.
+  Future<Result<Map<String, Object?>>> getRestaurant() {
+    return _withAuth((FirebaseAuthContext auth) {
+      return _send<Map<String, Object?>>(
+        method: 'GET',
+        uri: _uri(auth, RtdbPaths.restaurant(auth.restaurantId)),
+        onSuccess: _decodeObject,
+        context: 'download the restaurant backup',
+      );
+    });
+  }
+
+  /// Physically removes the restaurant node, every collection under it included.
+  ///
+  /// This is the cloud half of "Clear till data". Sync uses [markDeleted] for a
+  /// single row; emptying the outlet is a different operation and lives here.
+  Future<Result<void>> deleteRestaurant() {
+    return _withAuth((FirebaseAuthContext auth) {
+      return _send<void>(
+        method: 'DELETE',
+        uri: _uri(auth, RtdbPaths.restaurant(auth.restaurantId)),
+        onSuccess: (_) {},
+        context: 'clear the cloud restaurant',
+      );
+    });
+  }
+
   /// Reads nodes from [collection] whose `updatedAt` is greater than
   /// [sinceMillis], oldest change first. A `null` [sinceMillis] reads
   /// everything, which is what a fresh terminal needs to restore.
@@ -143,6 +173,24 @@ class RtdbRestClient {
     for (int i = 0; i < items.length; i += size) {
       yield items.sublist(i, i + size > items.length ? items.length : i + size);
     }
+  }
+
+  /// Decodes a GET of a node that may be missing (`null`) into a map.
+  static Map<String, Object?> _decodeObject(String body) {
+    if (body.isEmpty || body == 'null') {
+      return const <String, Object?>{};
+    }
+    final Object? decoded = jsonDecode(body);
+    if (decoded == null) {
+      return const <String, Object?>{};
+    }
+    if (decoded is! Map) {
+      throw const FormatException('Expected a JSON object');
+    }
+    return <String, Object?>{
+      for (final MapEntry<dynamic, dynamic> entry in decoded.entries)
+        entry.key.toString(): entry.value,
+    };
   }
 
   /// RTDB drops keys whose value is JSON null, so they are omitted on write.
