@@ -210,7 +210,7 @@ class _BoardBody extends StatelessWidget {
   }
 }
 
-/// One state's worth of slips, oldest at the top.
+/// One state's worth of slips, newest at the top.
 class _StatusColumn extends StatelessWidget {
   const _StatusColumn({required this.controller, required this.status});
 

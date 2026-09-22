@@ -136,6 +136,7 @@ class SqliteKotRepository implements KotRepository {
         whereArgs: active
             .map((KotStatus status) => status.name)
             .toList(growable: false),
+        orderBy: 'createdAt DESC, rowid DESC',
       ),
       context: 'load the kitchen board',
     );
@@ -215,7 +216,10 @@ class SqliteKotRepository implements KotRepository {
 
   // --------------------------------------------------------------- internals ---
 
-  /// Assembles slips matching [where] into tickets, oldest first.
+  /// Assembles slips matching [where] into tickets.
+  ///
+  /// [orderBy] defaults to oldest first, which is the print sequence for one order.
+  /// The kitchen board passes newest first so a just-settled slip sits at the top.
   ///
   /// Three queries, not one per slip: the headers, then every line for those slips,
   /// then every option for those lines, stitched together in memory. The board is read
@@ -224,12 +228,13 @@ class SqliteKotRepository implements KotRepository {
   Future<List<KitchenTicket>> _tickets({
     required String where,
     required List<Object?> whereArgs,
+    String orderBy = 'createdAt ASC, rowid ASC',
   }) async {
     final List<Map<String, Object?>> recordRows = await _db.query(
       SqliteTables.kotRecords,
       where: where,
       whereArgs: whereArgs,
-      orderBy: 'createdAt ASC, rowid ASC',
+      orderBy: orderBy,
     );
 
     final List<KotRecord> records = recordRows

@@ -39,7 +39,7 @@ abstract interface class KotRepository {
   /// Slips still waiting to be printed, across all orders.
   Future<Result<List<KotRecord>>> loadPending();
 
-  /// Everything the kitchen still has to deal with, oldest first, with each slip's
+  /// Everything the kitchen still has to deal with, newest first, with each slip's
   /// lines and their customisations already attached.
   ///
   /// This is the call the kitchen board makes. It returns slips in the pending,

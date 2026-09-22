@@ -45,7 +45,7 @@ class KitchenController extends ChangeNotifier {
 
   // ------------------------------------------------------------------- state ---
 
-  /// Every outstanding slip, oldest first.
+  /// Every outstanding slip, newest first.
   List<KitchenTicket> get tickets => _tickets;
 
   bool get isLoading => _isLoading;
@@ -61,7 +61,7 @@ class KitchenController extends ChangeNotifier {
   /// True when the board has been read and holds nothing.
   bool get isEmpty => _hasLoaded && _tickets.isEmpty;
 
-  /// Slips in one column, oldest first.
+  /// Slips in one column, newest first.
   List<KitchenTicket> ticketsAt(KotStatus status) => _tickets
       .where((KitchenTicket ticket) => ticket.status == status)
       .toList(growable: false);
