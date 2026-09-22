@@ -7,6 +7,7 @@ import '../core/constants/app_constants.dart';
 import '../core/error/app_error_reporter.dart';
 import '../core/error/app_failure.dart';
 import '../core/theme/app_theme.dart';
+import '../features/auth/domain/services/manager_auth_service.dart';
 import '../features/auth/presentation/controllers/auth_controller.dart';
 import '../features/billing/domain/repositories/checkout_repository.dart';
 import '../features/billing/domain/repositories/held_bill_repository.dart';
@@ -124,6 +125,9 @@ class BriskoApp extends StatelessWidget {
         ),
         Provider<SettingsRepository>.value(
           value: dependencies.settingsRepository,
+        ),
+        Provider<ManagerAuthService>.value(
+          value: dependencies.managerAuthService,
         ),
         Provider<OperationalDataWiper>.value(
           value: dependencies.operationalDataWiper,

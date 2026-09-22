@@ -6,6 +6,7 @@ import '../../core/data/remote/remote_store_factory.dart';
 import '../../core/data/sync/sync_endpoint.dart';
 import '../../core/data/sync/syncable_entity.dart';
 import '../../features/customers/domain/models/customer.dart';
+import '../../features/expenses/domain/models/expense.dart';
 import '../../features/inventory/domain/models/inventory_item.dart';
 import '../../features/inventory/domain/models/order_inventory_deduction.dart';
 import '../../features/inventory/domain/models/recipe_ingredient.dart';
@@ -30,9 +31,9 @@ import '../../features/payments/domain/models/refund.dart';
 ///
 /// Every entity that makes up the outlet's durable record is here: the menu and
 /// its variants and options, inventory and its recipes and movements, customers,
-/// and the whole of a settled sale — order, lines, options, payments, refunds,
-/// deductions and kitchen slips. That is the data a reinstalled or replaced
-/// terminal must get back.
+/// expenses, and the whole of a settled sale — order, lines, options, payments,
+/// refunds, deductions and kitchen slips. That is the data a reinstalled or
+/// replaced terminal must get back.
 ///
 /// Held bills are absent on purpose. A bill parked at the counter is transient
 /// working state, not a committed sale; it has no order number, no payment and no
@@ -40,6 +41,8 @@ import '../../features/payments/domain/models/refund.dart';
 /// print jobs and other device-local concerns are absent for the same reason: they
 /// belong to this machine, not to the outlet's record. Settings are configuration,
 /// not transactional data, and are left to the operator to set per terminal.
+/// The manager password is also absent here: it is a singleton RTDB node written
+/// directly, not an outbox collection.
 ///
 /// ## Order matters
 ///
@@ -107,6 +110,7 @@ List<SyncEndpointBase> buildSyncEndpoints(
     endpoint<KotRecord>(SqliteTables.kotRecords, KotRecord.fromRow),
     endpoint<KotItem>(SqliteTables.kotItems, KotItem.fromRow),
     endpoint<KotItemOption>(SqliteTables.kotItemOptions, KotItemOption.fromRow),
+    endpoint<Expense>(SqliteTables.expenses, Expense.fromRow),
   ];
 }
 
@@ -126,4 +130,5 @@ const List<String> operationalTables = <String>[
   SqliteTables.stockMovements,
   SqliteTables.kotRecords,
   SqliteTables.orderInventoryDeductions,
+  SqliteTables.expenses,
 ];

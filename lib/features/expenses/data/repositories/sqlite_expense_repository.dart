@@ -1,11 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 
-import '../../../../core/data/local/sqlite/row.dart';
 import '../../../../core/data/local/sqlite/sqlite_database.dart';
 import '../../../../core/data/local/sqlite/sqlite_error_mapper.dart';
 import '../../../../core/data/local/sqlite/sqlite_tables.dart';
 import '../../../../core/data/local/sqlite/sqlite_upsert.dart';
-import '../../../../core/money/money.dart';
 import '../../../../core/utils/result.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -50,7 +48,7 @@ class SqliteExpenseRepository implements ExpenseRepository {
         orderBy: '${SyncColumns.createdAt} DESC',
       );
 
-      return rows.map(_fromRow).toList(growable: false);
+      return rows.map(Expense.fromRow).toList(growable: false);
     }, context: 'load today expenses');
   }
 
@@ -71,18 +69,5 @@ class SqliteExpenseRepository implements ExpenseRepository {
       });
       _database.notifyTableChanged(SqliteTables.expenses);
     }, context: 'delete expense');
-  }
-
-  static Expense _fromRow(Map<String, Object?> row) {
-    return Expense(
-      id: row.requireString(SyncColumns.id),
-      name: row.requireString('name'),
-      amount: Money.fromPaise(row.requireInt('amountPaise')),
-      note: row.optionalString('note'),
-      createdAt: row.requireDateTime(SyncColumns.createdAt),
-      updatedAt: row.requireDateTime(SyncColumns.updatedAt),
-      isDeleted: row.requireBool(SyncColumns.isDeleted),
-      syncState: row.requireSyncState(SyncColumns.syncState),
-    );
   }
 }

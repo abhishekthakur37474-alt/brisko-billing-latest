@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../core/data/connectivity/polling_connectivity_monitor.dart';
 import '../../core/data/sync/default_sync_coordinator.dart';
 import '../../core/data/sync/initial_sync_service.dart';
+import '../../features/auth/domain/services/manager_auth_service.dart';
 
 /// Turns cloud synchronisation on and off in step with the sign-in state.
 ///
@@ -32,14 +33,19 @@ abstract interface class CloudSyncActivation {
 /// service are all built and disposed by the bootstrap. This only decides when they run.
 class DefaultCloudSyncActivation implements CloudSyncActivation {
   DefaultCloudSyncActivation({
-    required this._connectivity,
-    required this._coordinator,
-    required this._initialSync,
-  });
+    required PollingConnectivityMonitor connectivity,
+    required DefaultSyncCoordinator coordinator,
+    required InitialSyncService initialSync,
+    ManagerAuthService? managerAuth,
+  }) : _connectivity = connectivity,
+       _coordinator = coordinator,
+       _initialSync = initialSync,
+       _managerAuth = managerAuth;
 
   final PollingConnectivityMonitor _connectivity;
   final DefaultSyncCoordinator _coordinator;
   final InitialSyncService _initialSync;
+  final ManagerAuthService? _managerAuth;
 
   bool _enabled = false;
 
@@ -62,6 +68,14 @@ class DefaultCloudSyncActivation implements CloudSyncActivation {
     // blocks the sign-in from completing. It refuses to run over a database that already
     // holds bills, so it can only ever seed a genuinely empty terminal.
     unawaited(_initialSync.run());
+
+    // Manager password is a singleton RTDB node, not an outbox collection. Pull
+    // it on enable so a password set on another terminal is cached before the
+    // first cancellation.
+    final ManagerAuthService? managerAuth = _managerAuth;
+    if (managerAuth != null) {
+      unawaited(managerAuth.syncFromRtdb());
+    }
   }
 
   @override

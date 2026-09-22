@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../../settings/presentation/widgets/settings_notices.dart';
 import '../../domain/services/manager_auth_service.dart';
 import '../controllers/manager_password_controller.dart';
 
 /// Sets or changes the manager password used to authorise bill cancellation.
 ///
-/// The password is hashed before it is stored. Nothing on this screen is printed, synced,
-/// or shown in plaintext after a save.
+/// The password is hashed before it is stored. The hash is written to Realtime
+/// Database directly and cached locally for offline use. Nothing on this screen
+/// is printed or shown in plaintext after a save.
 class ManagerPasswordScreen extends StatelessWidget {
   const ManagerPasswordScreen({super.key});
 
@@ -20,9 +20,7 @@ class ManagerPasswordScreen extends StatelessWidget {
     return ChangeNotifierProvider<ManagerPasswordController>(
       create: (BuildContext context) {
         final ManagerPasswordController controller = ManagerPasswordController(
-          auth: ManagerAuthService(
-            settings: context.read<SettingsRepository>(),
-          ),
+          auth: context.read<ManagerAuthService>(),
         );
         unawaited(controller.load());
         return controller;

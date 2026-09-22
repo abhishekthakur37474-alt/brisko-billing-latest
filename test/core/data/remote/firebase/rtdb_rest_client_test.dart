@@ -286,4 +286,48 @@ void main() {
       expect(result.failureOrNull, isA<NetworkFailure>());
     },
   );
+
+  test('getRestaurantNode reads a singleton under the restaurant', () async {
+    server.responder = backend(
+      uid: 'restaurant-abc',
+      collectionBody: <String, dynamic>{
+        'hash': 'salt:abc',
+        'updatedAt': 1750000000000,
+      },
+    );
+    final RtdbRestClient client = clientFor(server);
+
+    final Result<Map<String, Object?>> result = await client.getRestaurantNode(
+      'managerPassword',
+    );
+
+    expect(result.isOk, isTrue);
+    expect(result.valueOrNull!['hash'], 'salt:abc');
+    expect(result.valueOrNull!['updatedAt'], 1750000000000);
+
+    final RecordedRequest get = server.requests.firstWhere(
+      (RecordedRequest r) =>
+          r.method == 'GET' && r.path.contains('/managerPassword.json'),
+    );
+    expect(get.path, '/restaurants/restaurant-abc/managerPassword.json');
+  });
+
+  test('putRestaurantNode overwrites the singleton node', () async {
+    server.responder = backend(uid: 'restaurant-abc');
+    final RtdbRestClient client = clientFor(server);
+
+    final Result<void> result = await client.putRestaurantNode(
+      'managerPassword',
+      <String, dynamic>{'hash': 'salt:xyz', 'updatedAt': 2},
+    );
+
+    expect(result.isOk, isTrue);
+    final RecordedRequest put = server.requests.firstWhere(
+      (RecordedRequest r) => r.method == 'PUT',
+    );
+    expect(put.path, '/restaurants/restaurant-abc/managerPassword.json');
+    final Map<String, dynamic> body = put.json! as Map<String, dynamic>;
+    expect(body['hash'], 'salt:xyz');
+    expect(body['updatedAt'], 2);
+  });
 }

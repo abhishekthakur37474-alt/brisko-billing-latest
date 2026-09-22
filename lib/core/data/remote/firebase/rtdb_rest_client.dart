@@ -102,6 +102,37 @@ class RtdbRestClient {
     });
   }
 
+  /// Reads one named node under the signed-in restaurant.
+  ///
+  /// Used for singleton values that are not entity collections, such as the
+  /// manager-password hash. A missing node is an empty map, not a failure.
+  Future<Result<Map<String, Object?>>> getRestaurantNode(String node) {
+    return _withAuth((FirebaseAuthContext auth) {
+      return _send<Map<String, Object?>>(
+        method: 'GET',
+        uri: _uri(auth, RtdbPaths.restaurantNode(auth.restaurantId, node)),
+        onSuccess: _decodeObject,
+        context: 'download $node',
+      );
+    });
+  }
+
+  /// Overwrites one named node under the signed-in restaurant.
+  Future<Result<void>> putRestaurantNode(
+    String node,
+    Map<String, dynamic> value,
+  ) {
+    return _withAuth((FirebaseAuthContext auth) {
+      return _send<void>(
+        method: 'PUT',
+        uri: _uri(auth, RtdbPaths.restaurantNode(auth.restaurantId, node)),
+        body: jsonEncode(_omitNulls(value)),
+        onSuccess: (_) {},
+        context: 'upload $node',
+      );
+    });
+  }
+
   /// Reads the whole restaurant node as a JSON object.
   ///
   /// Used to snapshot the cloud before a till wipe. An empty or missing node is

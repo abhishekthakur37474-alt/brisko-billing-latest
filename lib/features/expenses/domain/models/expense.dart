@@ -1,3 +1,5 @@
+import '../../../../core/data/local/sqlite/row.dart';
+import '../../../../core/data/local/sqlite/sqlite_tables.dart';
 import '../../../../core/data/sync/sync_state.dart';
 import '../../../../core/data/sync/syncable_entity.dart';
 import '../../../../core/money/money.dart';
@@ -14,6 +16,19 @@ class Expense implements SyncableEntity {
     this.isDeleted = false,
     this.syncState = SyncState.pending,
   });
+
+  factory Expense.fromRow(Map<String, Object?> row) {
+    return Expense(
+      id: row.requireString(SyncColumns.id),
+      name: row.requireString('name'),
+      amount: Money.fromPaise(row.requireInt('amountPaise')),
+      note: row.optionalString('note'),
+      createdAt: row.requireDateTime(SyncColumns.createdAt),
+      updatedAt: row.requireDateTime(SyncColumns.updatedAt),
+      isDeleted: row.requireBool(SyncColumns.isDeleted),
+      syncState: row.requireSyncState(SyncColumns.syncState),
+    );
+  }
 
   @override
   final String id;
@@ -61,8 +76,8 @@ class Expense implements SyncableEntity {
   }
 
   @override
-  Map<String, Object?> toMap() {
-    return {
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'id': id,
       'name': name,
       'amountPaise': amount.paise,

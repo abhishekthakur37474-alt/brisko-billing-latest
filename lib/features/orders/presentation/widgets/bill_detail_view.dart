@@ -16,7 +16,6 @@ import '../../../payments/domain/repositories/payment_repository.dart';
 import '../../../payments/domain/repositories/refund_repository.dart';
 import '../../../printing/domain/print_timestamp.dart';
 import '../../../printing/domain/services/print_service.dart';
-import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../domain/models/bill_line_snapshot.dart';
 import '../../domain/models/order.dart';
 import '../../domain/models/order_item_option.dart';
@@ -50,6 +49,7 @@ class BillDetailView extends StatelessWidget {
     final PaymentRepository payments = context.read<PaymentRepository>();
     final CustomerRepository customers = context.read<CustomerRepository>();
     final RefundRepository refunds = context.read<RefundRepository>();
+    final ManagerAuthService managerAuth = context.read<ManagerAuthService>();
     final PrintService printService = context.read<PrintService>();
 
     return showDialog<void>(
@@ -63,9 +63,7 @@ class BillDetailView extends StatelessWidget {
               paymentRepository: payments,
               customerRepository: customers,
               refundRepository: refunds,
-              managerAuthService: ManagerAuthService(
-                settings: context.read<SettingsRepository>(),
-              ),
+              managerAuthService: managerAuth,
               printService: printService,
             );
             // Not awaited: the first frame shows the loading state while the read runs.

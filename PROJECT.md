@@ -308,7 +308,7 @@ Outlet costs vs today's sales.
 - Today's sales, expenses, and profit (sales − expenses).
 - Add expense (name, amount, optional note).
 - Delete today's expense rows.
-- Local `expenses` table; not in the cloud sync endpoint list.
+- Local `expenses` table; synced to Realtime Database with the rest of operational data.
 
 ### 13. Settings (`SettingsScreen`)
 
@@ -395,9 +395,11 @@ Without those, the app is fully local: no login, no upload.
 | Sync | Push outbox, then pull; last-write-wins on `updatedAt` |
 | Restore | Initial sync only on a terminal with no operational rows (no bills yet) |
 
-Synced collections (dependency order): categories, menu items, variants, options, inventory items, recipe ingredients, customers, orders, order items, order item options, payments, refunds, stock movements, order inventory deductions, KOT records/items/options.
+Synced collections (dependency order): categories, menu items, variants, options, inventory items, recipe ingredients, customers, orders, order items, order item options, payments, refunds, stock movements, order inventory deductions, KOT records/items/options, expenses.
 
-**Not synced:** held bills, settings, printer state, expenses.
+Manager password is a singleton RTDB node (`restaurants/{uid}/managerPassword`), written and read directly — not through the outbox, and never stored in Firestore.
+
+**Not synced:** held bills, printer state, outlet settings (except the manager-password hash, which is RTDB-only).
 
 Project config in-repo: `.firebaserc` (`brisko-billing`), `firebase.json`, `firebase/database.rules.json`, `firebase/README.md`.
 

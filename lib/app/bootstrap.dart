@@ -19,6 +19,7 @@ import '../core/data/sync/sync_coordinator.dart';
 import '../core/data/sync/sync_endpoint.dart';
 import '../core/data/sync/sync_metadata_store.dart';
 import '../features/auth/data/auth_session_store.dart';
+import '../features/auth/domain/services/manager_auth_service.dart';
 import '../features/auth/presentation/controllers/auth_controller.dart';
 import '../features/billing/data/repositories/sqlite_checkout_repository.dart';
 import '../features/billing/data/repositories/sqlite_held_bill_repository.dart';
@@ -97,10 +98,11 @@ class AppDependencies {
     required this.kotRepository,
     required this.expenseRepository,
     required this.salesReportRepository,
-      required this.settingsRepository,
-      required this.operationalDataWiper,
-      required this.tillBackupStore,
-      required this.activeSettings,
+    required this.settingsRepository,
+    required this.managerAuthService,
+    required this.operationalDataWiper,
+    required this.tillBackupStore,
+    required this.activeSettings,
     required this.printer,
     required this.activePrinter,
     required this.activePrintProfile,
@@ -194,6 +196,10 @@ class AppDependencies {
   final SalesReportRepository salesReportRepository;
 
   final SettingsRepository settingsRepository;
+
+  /// Verifies and sets the manager password. Live copy is RTDB; local cache is
+  /// only for offline cancellation.
+  final ManagerAuthService managerAuthService;
 
   /// Removes bills, the menu, orders and the rest of the till's working data
   /// without touching the sign-in or the settings table. Backs up first, then
@@ -423,11 +429,17 @@ Future<AppDependencies> bootstrap({
 
   // The seam between "signed in" and "syncing". Present only on a cloud build; a
   // local-only build has nothing to activate.
+  final ManagerAuthService managerAuthService = ManagerAuthService(
+    settings: settings,
+    rtdb: firebaseFactory?.restClient,
+  );
+
   final CloudSyncActivation? syncActivation = isCloudConfigured
       ? DefaultCloudSyncActivation(
           connectivity: connectivity,
           coordinator: syncCoordinator,
           initialSync: initialSync,
+          managerAuth: managerAuthService,
         )
       : null;
 
@@ -473,6 +485,7 @@ Future<AppDependencies> bootstrap({
     expenseRepository: SqliteExpenseRepository(database: database),
     salesReportRepository: SqliteSalesReportRepository(database: database),
     settingsRepository: settings,
+    managerAuthService: managerAuthService,
     operationalDataWiper: SqliteOperationalDataWiper(
       database: database,
       outbox: outbox,

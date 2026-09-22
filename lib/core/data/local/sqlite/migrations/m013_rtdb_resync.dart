@@ -51,6 +51,7 @@ class M013RtdbResync implements Migration {
     SqliteTables.kotRecords,
     SqliteTables.kotItems,
     SqliteTables.kotItemOptions,
+    SqliteTables.expenses,
   ];
 
   static const String _highWaterMarkKey = 'pull.highWaterMarkMillis';

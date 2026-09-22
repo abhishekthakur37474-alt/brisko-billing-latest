@@ -12,6 +12,7 @@ import 'package:brisko_billing/core/error/app_failure.dart';
 import 'package:brisko_billing/core/money/money.dart';
 import 'package:brisko_billing/core/utils/result.dart';
 import 'package:brisko_billing/features/customers/domain/models/customer.dart';
+import 'package:brisko_billing/features/expenses/domain/models/expense.dart';
 import 'package:brisko_billing/features/orders/domain/models/order.dart';
 import 'package:brisko_billing/features/orders/domain/models/order_status.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +33,7 @@ void main() {
   late DefaultSyncCoordinator coordinator;
   late SqliteLocalStore<Customer> customers;
   late SqliteLocalStore<Order> orders;
+  late SqliteLocalStore<Expense> expenses;
 
   setUp(() async {
     database = await TestDatabase.openInMemory();
@@ -61,6 +63,11 @@ void main() {
       database: database,
       table: SqliteTables.orders,
       fromRow: Order.fromRow,
+    );
+    expenses = SqliteLocalStore<Expense>(
+      database: database,
+      table: SqliteTables.expenses,
+      fromRow: Expense.fromRow,
     );
   });
 
@@ -143,6 +150,30 @@ void main() {
         expect(cloud.row(SqliteTables.customers, customer.id), isNotNull);
       },
     );
+
+    test('an expense is uploaded to RTDB with the rest of operational data', () async {
+      final Expense expense = Expense(
+        id: 'exp-sync-1',
+        name: 'Vegetables',
+        amount: Money.parse('50.00'),
+        createdAt: DateTime.utc(2026, 9, 22, 10),
+        updatedAt: DateTime.utc(2026, 9, 22, 10),
+      );
+      await expenses.save(expense);
+
+      final Result<void> result = await coordinator.syncNow();
+
+      expect(result.isOk, isTrue);
+      expect(
+        await storedState(SqliteTables.expenses, expense.id),
+        SyncState.synced,
+      );
+      expect(cloud.row(SqliteTables.expenses, expense.id), isNotNull);
+      expect(
+        cloud.row(SqliteTables.expenses, expense.id)!['name'],
+        'Vegetables',
+      );
+    });
 
     test(
       'a failed upload stays queued and is retried on the next cycle',

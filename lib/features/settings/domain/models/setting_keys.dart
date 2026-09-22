@@ -96,4 +96,13 @@ class SettingKeys {
 
   /// UTC milliseconds of the last time operational data was physically cleared.
   static const String lastClearedAt = 'data.lastClearedAt';
+
+  /// Salted SHA-256 of the manager password. Cached locally so a bill can still
+  /// be cancelled while the till is offline; the live copy lives on RTDB.
+  static const String managerPassword = 'auth.manager_password';
+
+  /// UTC milliseconds of the last manager-password change, used to last-write-
+  /// wins against the RTDB node.
+  static const String managerPasswordUpdatedAt =
+      'auth.manager_password.updatedAt';
 }

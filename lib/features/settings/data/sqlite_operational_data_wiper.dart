@@ -5,6 +5,7 @@ import '../../../core/data/local/sqlite/sqlite_error_mapper.dart';
 import '../../../core/data/local/sqlite/sqlite_outbox_store.dart';
 import '../../../core/data/local/sqlite/sqlite_tables.dart';
 import '../../../core/data/remote/firebase/firebase_auth_session.dart';
+import '../../../core/data/remote/firebase/rtdb_paths.dart';
 import '../../../core/data/remote/firebase/rtdb_rest_client.dart';
 import '../../../core/data/sync/sync_coordinator.dart';
 import '../../../core/utils/result.dart';
@@ -26,9 +27,11 @@ import '../domain/services/till_backup_store.dart';
 /// ## What is kept
 ///
 /// [SqliteTables.settings] holds the sign-in, the outlet, the printer and the
-/// manager password. [SqliteTables.syncMetadata] is left so an ordinary pull
-/// does not dump the entire cloud history back onto a just-cleared till — and
-/// after an RTDB wipe there is nothing to dump anyway.
+/// manager password. The manager-password RTDB node is restored after the
+/// restaurant wipe so another terminal can still authorise cancellations.
+/// [SqliteTables.syncMetadata] is left so an ordinary pull does not dump the
+/// entire cloud history back onto a just-cleared till — and after an RTDB wipe
+/// there is nothing operational to dump anyway.
 ///
 /// ## Backup first
 ///
@@ -139,6 +142,15 @@ class SqliteOperationalDataWiper implements OperationalDataWiper {
         if (deleted.isErr) {
           return deleted;
         }
+        // Manager password is not operational data. Restore the RTDB node so
+        // another terminal can still cancel a bill after this till is wiped.
+        final Result<void> restored = await _restoreManagerPassword(
+          cloud,
+          rtdbDump,
+        );
+        if (restored.isErr) {
+          return restored;
+        }
       }
 
       final Result<void> local = await _wipeLocal();
@@ -174,6 +186,33 @@ class SqliteOperationalDataWiper implements OperationalDataWiper {
       await outbox.clearAll();
       database.notifyTablesChanged(tablesInDeleteOrder);
     }, context: 'clear the till data');
+  }
+
+  Future<Result<void>> _restoreManagerPassword(
+    RtdbRestClient cloud,
+    Map<String, Object?> rtdbDump,
+  ) async {
+    final Object? dumped = rtdbDump[RtdbPaths.managerPassword];
+    if (dumped is Map) {
+      return cloud.putRestaurantNode(
+        RtdbPaths.managerPassword,
+        Map<String, dynamic>.from(dumped),
+      );
+    }
+
+    final String? localHash =
+        (await settings.readString(SettingKeys.managerPassword)).valueOrNull;
+    if (localHash == null || localHash.isEmpty) {
+      return const Ok<void>(null);
+    }
+    final int localUpdatedAt =
+        (await settings.readInt(SettingKeys.managerPasswordUpdatedAt))
+            .valueOrNull ??
+        DateTime.now().toUtc().millisecondsSinceEpoch;
+    return cloud.putRestaurantNode(RtdbPaths.managerPassword, <String, dynamic>{
+      'hash': localHash,
+      'updatedAt': localUpdatedAt,
+    });
   }
 
   Future<Result<Map<String, Object?>>> _dumpSqlite() {

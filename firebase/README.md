@@ -37,6 +37,8 @@ restaurants/{restaurantId}/orderInventoryDeductions/{id}
 restaurants/{restaurantId}/kotRecords/{id}
 restaurants/{restaurantId}/kotItems/{id}
 restaurants/{restaurantId}/kotItemOptions/{id}
+restaurants/{restaurantId}/expenses/{id}
+restaurants/{restaurantId}/managerPassword
 ```
 
 `restaurantId` is the signed-in Firebase user's `uid`: a restaurant **is** a Firebase

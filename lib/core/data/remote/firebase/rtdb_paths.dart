@@ -27,7 +27,12 @@ class RtdbPaths {
     SqliteTables.kotRecords: 'kotRecords',
     SqliteTables.kotItems: 'kotItems',
     SqliteTables.kotItemOptions: 'kotItemOptions',
+    SqliteTables.expenses: 'expenses',
   };
+
+  /// Outlet manager-password hash. Written and read directly on RTDB, not
+  /// through the entity outbox and not stored in Firestore.
+  static const String managerPassword = 'managerPassword';
 
   /// Local table names that have a cloud node, in no particular order.
   static Iterable<String> get syncedTables => _byTable.keys;
@@ -47,4 +52,9 @@ class RtdbPaths {
   /// `restaurants/{restaurantId}/{node}/{id}`
   static String record(String restaurantId, String table, String id) =>
       '${collection(restaurantId, table)}/$id';
+
+  /// `restaurants/{restaurantId}/{node}` for a singleton node such as
+  /// [managerPassword], not a collection of rows.
+  static String restaurantNode(String restaurantId, String node) =>
+      '${restaurant(restaurantId)}/$node';
 }

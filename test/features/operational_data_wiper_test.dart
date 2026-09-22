@@ -13,6 +13,7 @@ import 'package:brisko_billing/features/expenses/domain/models/expense.dart';
 import 'package:brisko_billing/features/menu/data/repositories/sqlite_menu_repository.dart';
 import 'package:brisko_billing/features/orders/data/repositories/sqlite_order_repository.dart';
 import 'package:brisko_billing/features/orders/domain/models/order_item.dart';
+import 'package:brisko_billing/features/settings/data/file_till_backup_store.dart';
 import 'package:brisko_billing/features/settings/data/repositories/sqlite_settings_repository.dart';
 import 'package:brisko_billing/features/settings/data/sqlite_operational_data_wiper.dart';
 import 'package:brisko_billing/features/settings/domain/models/setting_keys.dart';
@@ -32,8 +33,13 @@ void main() {
   setUp(() async {
     database = await TestDatabase.openInMemory();
     outbox = SqliteOutboxStore(database: database);
-    wiper = SqliteOperationalDataWiper(database: database, outbox: outbox);
     settings = SqliteSettingsRepository(database: database);
+    wiper = SqliteOperationalDataWiper(
+      database: database,
+      outbox: outbox,
+      settings: settings,
+      backups: FileTillBackupStore(),
+    );
   });
 
   tearDown(() async {

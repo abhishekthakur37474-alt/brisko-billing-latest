@@ -9,6 +9,7 @@ import 'package:brisko_billing/core/data/remote/remote_store_factory.dart';
 import 'package:brisko_billing/core/data/sync/default_sync_coordinator.dart';
 import 'package:brisko_billing/core/data/sync/sync_endpoint.dart';
 import 'package:brisko_billing/features/auth/data/auth_session_store.dart';
+import 'package:brisko_billing/features/auth/domain/services/manager_auth_service.dart';
 import 'package:brisko_billing/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:brisko_billing/features/billing/data/repositories/sqlite_checkout_repository.dart';
 import 'package:brisko_billing/features/billing/data/repositories/sqlite_held_bill_repository.dart';
@@ -162,6 +163,7 @@ class TestDependencies {
           salesReportRepository ??
           SqliteSalesReportRepository(database: database),
       settingsRepository: resolvedSettings,
+      managerAuthService: ManagerAuthService(settings: resolvedSettings),
       operationalDataWiper: SqliteOperationalDataWiper(
         database: database,
         outbox: outbox,

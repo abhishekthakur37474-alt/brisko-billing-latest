@@ -34,6 +34,7 @@ void main() {
         SqliteTables.kotRecords,
         SqliteTables.kotItems,
         SqliteTables.kotItemOptions,
+        SqliteTables.expenses,
       ];
       for (final String table in syncedTables) {
         expect(RtdbPaths.resolve(table), isNot(contains('_')));
@@ -48,6 +49,14 @@ void main() {
       expect(
         RtdbPaths.collection('restaurant-abc', SqliteTables.orders),
         'restaurants/restaurant-abc/orders',
+      );
+      expect(
+        RtdbPaths.resolve(SqliteTables.expenses),
+        'expenses',
+      );
+      expect(
+        RtdbPaths.restaurantNode('restaurant-abc', RtdbPaths.managerPassword),
+        'restaurants/restaurant-abc/managerPassword',
       );
     });
   });
