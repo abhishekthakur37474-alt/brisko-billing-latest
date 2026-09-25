@@ -53,6 +53,11 @@ class CheckoutConfirmStep extends StatelessWidget {
                 // carry.
                 value: _customerLabel(controller),
               ),
+              if (controller.hasCustomerAddress)
+                _ConfirmRow(
+                  label: 'Address',
+                  value: controller.trimmedCustomerAddress,
+                ),
               _ConfirmRow(
                 label: 'Kitchen slip',
                 value: controller.printKitchenSlip ? 'Print' : 'Do not print',

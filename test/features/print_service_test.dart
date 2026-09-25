@@ -70,6 +70,7 @@ void main() {
     PaymentMethod paymentMethod = PaymentMethod.cash,
     String? customerName,
     String? customerPhone,
+    String? customerAddress,
     String? notes,
   }) async {
     final Result<Order> settled = await checkout.settle(
@@ -84,6 +85,7 @@ void main() {
         // transaction, so nothing has to be created here first.
         customerName: customerName,
         customerPhone: customerPhone,
+        customerAddress: customerAddress,
         notes: notes,
       ),
     );
@@ -180,6 +182,26 @@ void main() {
 
       expect(documentAt(1).hasLineContaining('Customer: Ravi'), isTrue);
       expect(documentAt(1).hasLineContaining('Phone: 9876543210'), isTrue);
+    });
+
+    test('the delivery address is printed when taken', () async {
+      final Order order = await sellPizza(
+        orderType: OrderType.delivery,
+        customerName: 'Ravi',
+        customerPhone: '9876543210',
+        customerAddress: '12 Baraut Road, Chhaprauli',
+      );
+
+      await printing.printSale(order.id);
+
+      expect(
+        documentAt(1).hasLineContaining('Address: 12 Baraut Road, Chhaprauli'),
+        isTrue,
+      );
+      expect(
+        documentAt(0).hasLineContaining('Address: 12 Baraut Road, Chhaprauli'),
+        isTrue,
+      );
     });
 
     test('a name without a phone still prints on the receipt', () async {

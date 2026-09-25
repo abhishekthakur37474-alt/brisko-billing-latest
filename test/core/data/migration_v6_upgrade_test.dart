@@ -74,7 +74,7 @@ void main() {
     // the cloud sync bookmarks (v10) all landed after this upgrade path, so the current
     // version has moved well past 6. Opening a v5 database still carries it all the way to
     // the latest.
-    expect(SqliteDatabase.schemaVersion, 15);
+    expect(SqliteDatabase.schemaVersion, 16);
   });
 
   test('the recipe and deduction tables are added', () async {

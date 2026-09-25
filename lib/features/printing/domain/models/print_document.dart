@@ -63,6 +63,7 @@ final class CustomerReceipt extends PrintDocument {
     required this.paymentMethod,
     this.customerName,
     this.customerPhone,
+    this.customerAddress,
     this.notes,
     this.isReprint = false,
   });
@@ -91,6 +92,9 @@ final class CustomerReceipt extends PrintDocument {
   /// Customer's number, when one was taken. Absent for a walk-in.
   final String? customerPhone;
 
+  /// Delivery address, when one was taken. Absent for a walk-in or an on-premises bill.
+  final String? customerAddress;
+
   /// Order-level note, printed under the lines.
   final String? notes;
 
@@ -108,6 +112,9 @@ final class CustomerReceipt extends PrintDocument {
 
   bool get hasCustomerPhone =>
       customerPhone != null && customerPhone!.trim().isNotEmpty;
+
+  bool get hasCustomerAddress =>
+      customerAddress != null && customerAddress!.trim().isNotEmpty;
 
   bool get hasNotes => notes != null && notes!.trim().isNotEmpty;
 
@@ -291,6 +298,7 @@ final class KitchenKot extends PrintDocument {
     required this.lines,
     this.customerName,
     this.customerPhone,
+    this.customerAddress,
     this.notes,
     this.isReprint = false,
   });
@@ -316,6 +324,9 @@ final class KitchenKot extends PrintDocument {
   /// Customer's number, when one was taken. Absent for a walk-in.
   final String? customerPhone;
 
+  /// Delivery address, when one was taken. Printed so the kitchen can pack for the right door.
+  final String? customerAddress;
+
   /// Order-level instruction, for example `no onion in anything`.
   final String? notes;
 
@@ -330,6 +341,9 @@ final class KitchenKot extends PrintDocument {
 
   bool get hasCustomerPhone =>
       customerPhone != null && customerPhone!.trim().isNotEmpty;
+
+  bool get hasCustomerAddress =>
+      customerAddress != null && customerAddress!.trim().isNotEmpty;
 
   bool get hasNotes => notes != null && notes!.trim().isNotEmpty;
 

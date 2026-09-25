@@ -37,6 +37,7 @@ void main() {
     PaymentMethod paymentMethod = PaymentMethod.cash,
     String? customerName,
     String? customerPhone,
+    String? customerAddress,
     String? notes,
     OrderType orderType = OrderType.takeaway,
     bool isReprint = false,
@@ -80,6 +81,7 @@ void main() {
       paymentMethod: paymentMethod,
       customerName: customerName,
       customerPhone: customerPhone,
+      customerAddress: customerAddress,
       notes: notes,
       isReprint: isReprint,
     );
@@ -170,6 +172,19 @@ void main() {
       expect(paper.hasLineContaining('Customer: Ravi'), isTrue);
       expect(paper.hasLineContaining('Phone: 9876543210'), isTrue);
       expect(paper.hasCommand(EscPosCommands.boldOn), isTrue);
+    });
+
+    test('the delivery address is printed when taken', () {
+      final EscPosTranscript paper = print(
+        receipt(
+          orderType: OrderType.delivery,
+          customerName: 'Ravi',
+          customerPhone: '9876543210',
+          customerAddress: '12 Baraut Road, Chhaprauli',
+        ),
+      );
+
+      expect(paper.hasLineContaining('Address: 12 Baraut Road, Chhaprauli'), isTrue);
     });
 
     test('a walk-in gets no customer line', () {

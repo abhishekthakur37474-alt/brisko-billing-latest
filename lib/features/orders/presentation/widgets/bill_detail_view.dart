@@ -670,6 +670,11 @@ class _Header extends StatelessWidget {
             label: 'Phone',
             value: CustomerPhone.forDisplay(controller.customerPhone!),
           ),
+        if (controller.customerAddress != null)
+          _DetailRow(
+            label: 'Address',
+            value: controller.customerAddress!,
+          ),
         _DetailRow(label: 'Status', value: order.status.label),
         if (order.notes != null && order.notes!.trim().isNotEmpty)
           _DetailRow(label: 'Note', value: order.notes!.trim()),

@@ -310,6 +310,7 @@ void main() {
       PaymentMethod method = PaymentMethod.cash,
       String? customerName,
       String? customerPhone,
+      String? customerAddress,
       String? reference,
       String? notes,
     }) => BillSettlement.fromCart(
@@ -318,6 +319,7 @@ void main() {
       paymentMethod: method,
       customerName: customerName,
       customerPhone: customerPhone,
+      customerAddress: customerAddress,
       reference: reference,
       notes: notes,
       at: at,
@@ -491,6 +493,28 @@ void main() {
       expect(order.createdAt, at);
       // Consistent with what the payment says was collected.
       expect(order.totalAmount, settlement.payment.amount);
+    });
+
+    test('a delivery address is stamped onto the order', () {
+      final BillSettlement settlement = settlementFor(
+        cartOf(<CartLine>[lineOf(id: 'l1', item: itemPriced('320.00'))]),
+        orderType: OrderType.delivery,
+        customerName: 'Ravi',
+        customerPhone: '9876500001',
+        customerAddress: '12 Baraut Road, Chhaprauli',
+      );
+
+      expect(settlement.recordedCustomerAddress, '12 Baraut Road, Chhaprauli');
+
+      final Order order = settlement.toOrder(
+        '20260921-0002',
+        customerId: 'cus-1',
+      );
+
+      expect(order.orderType, OrderType.delivery);
+      expect(order.customerName, 'Ravi');
+      expect(order.customerAddress, '12 Baraut Road, Chhaprauli');
+      expect(order.toMap()['customerAddress'], '12 Baraut Road, Chhaprauli');
     });
 
     test('a name without a phone is stamped onto the order', () {

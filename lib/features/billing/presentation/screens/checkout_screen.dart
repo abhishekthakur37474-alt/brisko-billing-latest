@@ -123,6 +123,9 @@ class _CheckoutView extends StatelessWidget {
                       : (controller.hasCustomerPhone
                             ? controller.customerPhone
                             : null),
+                  customerAddress: controller.trimmedCustomerAddress.isEmpty
+                      ? null
+                      : controller.trimmedCustomerAddress,
                 ),
               ),
             ],

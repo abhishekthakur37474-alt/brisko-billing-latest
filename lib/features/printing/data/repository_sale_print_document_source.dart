@@ -204,6 +204,7 @@ class RepositorySalePrintDocumentSource implements SalePrintDocumentSource {
         paymentMethod: settled.first.paymentMethod,
         customerName: order.customerName ?? customer?.name,
         customerPhone: customer?.phone,
+        customerAddress: order.customerAddress,
         notes: order.notes,
         isReprint: isReprint,
       ),
@@ -251,6 +252,7 @@ class RepositorySalePrintDocumentSource implements SalePrintDocumentSource {
               issuedAt: ticket.createdAt,
               customerName: order.customerName ?? customer?.name,
               customerPhone: customer?.phone,
+              customerAddress: order.customerAddress,
               notes: ticket.notes,
               isReprint: isReprint,
               lines: ticket.lines

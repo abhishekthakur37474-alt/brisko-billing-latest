@@ -49,7 +49,7 @@ void main() {
 
     expect(await database.database.getVersion(), SqliteDatabase.schemaVersion);
     expect(const M014OrderCustomerName().version, 14);
-    expect(SqliteDatabase.schemaVersion, 15);
+    expect(SqliteDatabase.schemaVersion, 16);
   });
 
   test('the customerName column is added to the orders table', () async {

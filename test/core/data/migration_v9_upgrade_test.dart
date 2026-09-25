@@ -102,7 +102,7 @@ void main() {
     // database version is derived from the list, so these two together are what say the
     // list grew by exactly this migration.
     expect(const M009BillTaxAndDiscount().version, 9);
-    expect(SqliteDatabase.schemaVersion, 15);
+    expect(SqliteDatabase.schemaVersion, 16);
   });
 
   test('the three columns are added to the orders table', () async {

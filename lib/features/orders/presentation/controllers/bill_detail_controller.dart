@@ -262,6 +262,12 @@ class BillDetailController extends ChangeNotifier {
   /// The number recorded for the customer, or `null` for a walk-in.
   String? get customerPhone => _customer?.phone;
 
+  /// Delivery address stamped on the bill, or `null` when none was stored.
+  String? get customerAddress {
+    final String? address = _order?.customerAddress?.trim();
+    return address == null || address.isEmpty ? null : address;
+  }
+
   /// The name recorded for the customer, or `null` when none was stored.
   ///
   /// Prefers the name stamped on the bill, so a walk-in whose name was taken

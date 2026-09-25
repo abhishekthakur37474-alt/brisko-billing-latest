@@ -17,6 +17,7 @@ class BillSummaryPanel extends StatelessWidget {
     this.title = 'Bill',
     this.customerName,
     this.customerPhone,
+    this.customerAddress,
     super.key,
   });
 
@@ -35,13 +36,19 @@ class BillSummaryPanel extends StatelessWidget {
   /// Phone taken on this bill, if any.
   final String? customerPhone;
 
+  /// Delivery address taken on this bill, if any.
+  final String? customerAddress;
+
   bool get _hasName =>
       customerName != null && customerName!.trim().isNotEmpty;
 
   bool get _hasPhone =>
       customerPhone != null && customerPhone!.trim().isNotEmpty;
 
-  bool get _hasCustomer => _hasName || _hasPhone;
+  bool get _hasAddress =>
+      customerAddress != null && customerAddress!.trim().isNotEmpty;
+
+  bool get _hasCustomer => _hasName || _hasPhone || _hasAddress;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +85,13 @@ class BillSummaryPanel extends StatelessWidget {
                 if (_hasPhone)
                   Text(
                     customerPhone!.trim(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                if (_hasAddress)
+                  Text(
+                    customerAddress!.trim(),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

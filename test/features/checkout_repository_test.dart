@@ -61,6 +61,7 @@ void main() {
     PaymentMethod method = PaymentMethod.cash,
     String? customerName,
     String? customerPhone,
+    String? customerAddress,
     String? reference,
     String? notes,
   }) => BillSettlement.fromCart(
@@ -69,6 +70,7 @@ void main() {
     paymentMethod: method,
     customerName: customerName,
     customerPhone: customerPhone,
+    customerAddress: customerAddress,
     reference: reference,
     notes: notes,
   );
@@ -158,6 +160,27 @@ void main() {
 
       final Order stored = (await orders.findOrder(order.id)).valueOrNull!;
       expect(stored.customerName, 'Ravi');
+    });
+
+    test('a delivery address is stored on the bill', () async {
+      final Cart cart = await pizzaCart();
+
+      final Result<Order> result = await checkout.settle(
+        settlementFor(
+          cart,
+          orderType: OrderType.delivery,
+          customerName: 'Ravi',
+          customerAddress: '12 Baraut Road, Chhaprauli',
+        ),
+      );
+
+      expect(result.isOk, isTrue, reason: result.failureOrNull?.message);
+      final Order order = result.valueOrNull!;
+      expect(order.orderType, OrderType.delivery);
+      expect(order.customerAddress, '12 Baraut Road, Chhaprauli');
+
+      final Order stored = (await orders.findOrder(order.id)).valueOrNull!;
+      expect(stored.customerAddress, '12 Baraut Road, Chhaprauli');
     });
 
     test('a multi-line bill totals exactly and keeps its line order', () async {

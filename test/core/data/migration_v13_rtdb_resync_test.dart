@@ -46,7 +46,7 @@ void main() {
 
     expect(await database.database.getVersion(), SqliteDatabase.schemaVersion);
     expect(const M013RtdbResync().version, 13);
-    expect(SqliteDatabase.schemaVersion, 15);
+    expect(SqliteDatabase.schemaVersion, 16);
   });
 
   test('previously synced menu and orders are requeued as pending', () async {

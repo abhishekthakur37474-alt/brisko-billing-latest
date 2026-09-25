@@ -173,6 +173,7 @@ class CheckoutController extends ChangeNotifier {
   OrderType _orderType;
   String _customerName = '';
   String _customerPhone = '';
+  String _customerAddress = '';
   String _notes = '';
   PaymentMethod? _paymentMethod;
   CashTender _cashTender;
@@ -402,6 +403,15 @@ class CheckoutController extends ChangeNotifier {
 
   bool get hasCustomerName => trimmedCustomerName.isNotEmpty;
 
+  String get customerAddress => _customerAddress;
+
+  String get trimmedCustomerAddress => _customerAddress.trim();
+
+  bool get hasCustomerAddress => trimmedCustomerAddress.isNotEmpty;
+
+  /// True when this bill is a delivery and therefore needs an address.
+  bool get requiresCustomerAddress => _orderType == OrderType.delivery;
+
   /// True when what has been entered reduces to a number that can be stored.
   bool get isCustomerPhoneComplete => normalisedCustomerPhone != null;
 
@@ -411,8 +421,14 @@ class CheckoutController extends ChangeNotifier {
   /// optional. When it does not, a walk-in is acceptable — but a half-typed number
   /// still blocks, because filing the bill under a stranger is worse than leaving
   /// it unnamed.
+  ///
+  /// Delivery always needs an address, even when customer details are otherwise
+  /// optional: a pizza leaving the outlet has to reach a door.
   bool get isCustomerAcceptable {
     if (hasCustomerPhone && !isCustomerPhoneComplete) {
+      return false;
+    }
+    if (requiresCustomerAddress && !hasCustomerAddress) {
       return false;
     }
     if (!_askCustomerDetails) {
@@ -439,6 +455,16 @@ class CheckoutController extends ChangeNotifier {
       return null;
     }
     return _askCustomerDetails ? 'A name is needed for every order.' : null;
+  }
+
+  /// What is wrong with the address entered, or `null` when there is nothing to say.
+  String? get customerAddressProblem {
+    if (hasCustomerAddress) {
+      return null;
+    }
+    return requiresCustomerAddress
+        ? 'An address is needed for a delivery order.'
+        : null;
   }
 
   /// True when the review step is complete enough to take payment.
@@ -640,6 +666,15 @@ class CheckoutController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCustomerAddress(String value) {
+    if (_customerAddress == value || isSettled) {
+      return;
+    }
+    _customerAddress = value;
+    _invalidateSettlement();
+    notifyListeners();
+  }
+
   void setNotes(String value) {
     if (_notes == value || isSettled) {
       return;
@@ -761,6 +796,9 @@ class CheckoutController extends ChangeNotifier {
       // create a second one.
       customerName: _customerName.trim().isEmpty ? null : _customerName.trim(),
       customerPhone: normalisedCustomerPhone,
+      customerAddress: requiresCustomerAddress && _customerAddress.trim().isNotEmpty
+          ? _customerAddress.trim()
+          : null,
       reference: _referenceOrNull,
       notes: _notesOrNull,
     );

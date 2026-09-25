@@ -47,6 +47,7 @@ class Order implements SyncableEntity {
     this.discountValue = 0,
     this.customerId,
     this.customerName,
+    this.customerAddress,
     this.notes,
     this.cancelledAt,
     this.cancellationReason,
@@ -71,6 +72,7 @@ class Order implements SyncableEntity {
       ),
       customerId: row.optionalString('customerId'),
       customerName: row.optionalString('customerName'),
+      customerAddress: row.optionalString('customerAddress'),
       subtotal: Money.fromPaise(row.requireInt('subtotalPaise')),
       discountAmount: Money.fromPaise(row.requireInt('discountAmountPaise')),
       taxAmount: Money.fromPaise(row.requireInt('taxAmountPaise')),
@@ -112,6 +114,14 @@ class Order implements SyncableEntity {
   /// missing value is a walk-in; a stored value is what the cashier typed, for any
   /// order type.
   final String? customerName;
+
+  /// Delivery address taken with this bill, or `null` when none was given.
+  ///
+  /// Stored on the order rather than on a customer record, because an address is a
+  /// fact about *this* sale (where this pizza went), not a standing profile. Required
+  /// at checkout for [OrderType.delivery]; optional for every other type. A reprint
+  /// and a cloud restore both read this snapshot.
+  final String? customerAddress;
 
   /// Sum of line totals before bill-level discount and tax.
   final Money subtotal;
@@ -178,6 +188,7 @@ class Order implements SyncableEntity {
     OrderStatus? status,
     String? customerId,
     String? customerName,
+    String? customerAddress,
     Money? subtotal,
     Money? discountAmount,
     Money? taxAmount,
@@ -200,6 +211,7 @@ class Order implements SyncableEntity {
       status: status ?? this.status,
       customerId: customerId ?? this.customerId,
       customerName: customerName ?? this.customerName,
+      customerAddress: customerAddress ?? this.customerAddress,
       subtotal: subtotal ?? this.subtotal,
       discountAmount: discountAmount ?? this.discountAmount,
       taxAmount: taxAmount ?? this.taxAmount,
@@ -231,6 +243,7 @@ class Order implements SyncableEntity {
       'status': status.name,
       'customerId': customerId,
       'customerName': customerName,
+      'customerAddress': customerAddress,
       'subtotalPaise': subtotal.paise,
       'discountAmountPaise': discountAmount.paise,
       'taxAmountPaise': taxAmount.paise,

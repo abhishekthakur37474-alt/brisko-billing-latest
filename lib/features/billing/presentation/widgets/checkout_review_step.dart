@@ -44,6 +44,15 @@ class CheckoutReviewStep extends StatelessWidget {
           const SizedBox(height: 8),
           const _CustomerInfoFields(),
         ],
+        if (controller.requiresCustomerAddress) ...<Widget>[
+          if (!controller.askCustomerDetails) ...<Widget>[
+            const SizedBox(height: 24),
+            Text('Delivery address', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+          ] else
+            const SizedBox(height: 16),
+          const _AddressField(),
+        ],
         const SizedBox(height: 24),
         if (DateTime.now().weekday == DateTime.friday &&
             controller.qualifyingMediumPizzas > 0) ...<Widget>[
@@ -397,6 +406,66 @@ class _CustomerInfoFieldsState extends State<_CustomerInfoFields> {
           _ReturningCustomerNote(customer: controller.knownCustomer!),
         ],
       ],
+    );
+  }
+}
+
+/// Delivery address. Shown only when the order type is Delivery.
+///
+/// Required for a delivery, optional nowhere else: a pizza leaving the outlet
+/// has to reach a door. Free text, as typed; nothing is parsed from it.
+class _AddressField extends StatefulWidget {
+  const _AddressField();
+
+  @override
+  State<_AddressField> createState() => _AddressFieldState();
+}
+
+class _AddressFieldState extends State<_AddressField> {
+  late final TextEditingController _field;
+
+  @override
+  void initState() {
+    super.initState();
+    _field = TextEditingController(
+      text: context.read<CheckoutController>().customerAddress,
+    );
+  }
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final CheckoutController controller = context.watch<CheckoutController>();
+
+    if (_field.text != controller.customerAddress) {
+      _field.value = TextEditingValue(
+        text: controller.customerAddress,
+        selection: TextSelection.collapsed(
+          offset: controller.customerAddress.length,
+        ),
+      );
+    }
+
+    return TextField(
+      controller: _field,
+      textCapitalization: TextCapitalization.sentences,
+      minLines: 2,
+      maxLines: 4,
+      decoration: InputDecoration(
+        labelText: 'Delivery address',
+        hintText: 'House, street, landmark',
+        prefixIcon: const Icon(Icons.location_on_outlined),
+        errorText: controller.customerAddress.isNotEmpty
+            ? controller.customerAddressProblem
+            : null,
+        helperText: 'Needed for a delivery order.',
+      ),
+      onChanged: context.read<CheckoutController>().setCustomerAddress,
     );
   }
 }

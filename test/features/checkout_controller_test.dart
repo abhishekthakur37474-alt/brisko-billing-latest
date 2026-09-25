@@ -282,14 +282,58 @@ void main() {
 
       controller.selectOrderType(OrderType.delivery);
       controller.setCustomerName('Ravi');
+      controller.setCustomerAddress('12 Baraut Road, Chhaprauli');
 
       expect(controller.hasCustomerPhone, isFalse);
+      expect(controller.requiresCustomerAddress, isTrue);
       expect(controller.isCustomerAcceptable, isTrue);
       expect(controller.canProceedToPayment, isTrue);
 
       controller.setCustomerPhone('9000000001');
 
       expect(controller.isCustomerPhoneComplete, isTrue);
+      expect(controller.canProceedToPayment, isTrue);
+    });
+
+    test('a delivery without an address cannot proceed', () async {
+      await ringUpPizza();
+      final CheckoutController controller = openCheckout(withCustomer: false);
+
+      controller.selectOrderType(OrderType.delivery);
+      controller.setCustomerName('Ravi');
+
+      expect(controller.requiresCustomerAddress, isTrue);
+      expect(controller.hasCustomerAddress, isFalse);
+      expect(controller.customerAddressProblem, 'An address is needed for a delivery order.');
+      expect(controller.isCustomerAcceptable, isFalse);
+      expect(controller.canProceedToPayment, isFalse);
+
+      controller.setCustomerAddress('Opp. library, Baraut Road');
+
+      expect(controller.hasCustomerAddress, isTrue);
+      expect(controller.customerAddressProblem, isNull);
+      expect(controller.isCustomerAcceptable, isTrue);
+      expect(controller.canProceedToPayment, isTrue);
+    });
+
+    test('a delivery still needs an address when customer details are optional', () async {
+      await ringUpPizza();
+      final CheckoutController controller = openCheckout(
+        withCustomer: false,
+        askCustomerDetails: false,
+      );
+
+      expect(controller.canProceedToPayment, isTrue);
+
+      controller.selectOrderType(OrderType.delivery);
+
+      expect(controller.requiresCustomerAddress, isTrue);
+      expect(controller.isCustomerAcceptable, isFalse);
+      expect(controller.canProceedToPayment, isFalse);
+
+      controller.setCustomerAddress('12 Baraut Road');
+
+      expect(controller.isCustomerAcceptable, isTrue);
       expect(controller.canProceedToPayment, isTrue);
     });
 
@@ -424,6 +468,29 @@ void main() {
         controller.settledOrder!.id,
       )).valueOrNull!;
       expect(stored.customerName, 'Ravi');
+    });
+
+    test('a delivery address is stored on the bill', () async {
+      await ringUpPizza();
+      final CheckoutController controller = openCheckout(withCustomer: false);
+      controller.selectOrderType(OrderType.delivery);
+      controller.setCustomerName('Ravi');
+      controller.setCustomerAddress('12 Baraut Road, Chhaprauli');
+      controller.goToPayment();
+      controller.selectPaymentMethod(PaymentMethod.card);
+      controller.goToConfirm();
+
+      await controller.submit();
+
+      expect(controller.isSettled, isTrue);
+      expect(controller.settledOrder!.orderType, OrderType.delivery);
+      expect(controller.settledOrder!.customerAddress, '12 Baraut Road, Chhaprauli');
+
+      final Order stored = (await orders.findOrder(
+        controller.settledOrder!.id,
+      )).valueOrNull!;
+      expect(stored.customerAddress, '12 Baraut Road, Chhaprauli');
+      expect(stored.toMap()['customerAddress'], '12 Baraut Road, Chhaprauli');
     });
 
     test('the customer is created and linked to the bill', () async {

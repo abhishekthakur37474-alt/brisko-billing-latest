@@ -56,6 +56,7 @@ class BillSettlement {
     required List<OrderItemOption> itemOptions,
     this.customerName,
     this.customerPhone,
+    this.customerAddress,
     this.notes,
     String? kotId,
   }) : items = List<OrderItem>.unmodifiable(items),
@@ -84,6 +85,7 @@ class BillSettlement {
     GstRate taxRate = GstRate.zero,
     String? customerName,
     String? customerPhone,
+    String? customerAddress,
     String? reference,
     String? notes,
     DateTime? at,
@@ -159,6 +161,7 @@ class BillSettlement {
       ),
       customerName: customerName,
       customerPhone: customerPhone,
+      customerAddress: customerAddress,
       notes: notes,
       createdAt: createdAt,
     );
@@ -190,6 +193,9 @@ class BillSettlement {
   /// is refused by the one place that owns that rule.
   final String? customerPhone;
 
+  /// Delivery address taken with this bill, or `null` when none was given.
+  final String? customerAddress;
+
   /// True when this bill is to be filed against a customer.
   bool get hasCustomer =>
       customerPhone != null && customerPhone!.trim().isNotEmpty;
@@ -198,6 +204,12 @@ class BillSettlement {
   String? get recordedCustomerName {
     final String? name = customerName?.trim();
     return name == null || name.isEmpty ? null : name;
+  }
+
+  /// The address to stamp onto the order, or `null` when none was given.
+  String? get recordedCustomerAddress {
+    final String? address = customerAddress?.trim();
+    return address == null || address.isEmpty ? null : address;
   }
 
   final String? notes;
@@ -251,6 +263,7 @@ class BillSettlement {
       status: CheckoutTransition.settledOrderStatus,
       customerId: customerId,
       customerName: recordedCustomerName,
+      customerAddress: recordedCustomerAddress,
       subtotal: totals.subtotal,
       discountAmount: totals.discount,
       taxAmount: totals.tax,

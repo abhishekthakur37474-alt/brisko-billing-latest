@@ -90,6 +90,9 @@ class EscPosDocumentFormatter implements PrintDocumentEncoder {
     if (receipt.hasCustomerPhone) {
       builder.line('Phone: ${receipt.customerPhone}');
     }
+    if (receipt.hasCustomerAddress) {
+      builder.line('Address: ${receipt.customerAddress}');
+    }
     builder.separator();
 
     for (final CustomerReceiptLine line in receipt.lines) {
@@ -267,6 +270,9 @@ class EscPosDocumentFormatter implements PrintDocumentEncoder {
     }
     if (kot.hasCustomerPhone) {
       builder.line('Phone: ${kot.customerPhone}');
+    }
+    if (kot.hasCustomerAddress) {
+      builder.line('Address: ${kot.customerAddress}');
     }
     builder.separator();
 

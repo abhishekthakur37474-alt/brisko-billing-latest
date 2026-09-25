@@ -90,6 +90,11 @@ class CheckoutSuccessStep extends StatelessWidget {
                           controller.normalisedCustomerPhone!,
                         ),
                       ),
+                    if (controller.hasCustomerAddress)
+                      _SettledRow(
+                        label: 'Address',
+                        value: controller.trimmedCustomerAddress,
+                      ),
                     _SettledRow(label: 'Status', value: order.status.label),
                   ],
                 ),
