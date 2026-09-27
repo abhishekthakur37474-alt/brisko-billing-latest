@@ -6,6 +6,7 @@ import '../../../../core/error/app_failure.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/utils/result.dart';
 import '../../../customers/domain/models/customer.dart';
+import '../../../customers/domain/models/customer_match.dart';
 import '../../../customers/domain/models/customer_phone.dart';
 import '../../../customers/domain/repositories/customer_repository.dart';
 import '../../../inventory/domain/models/order_inventory_deduction.dart';
@@ -201,6 +202,15 @@ class CheckoutController extends ChangeNotifier {
   /// useful. The customer record for a new number is created by settlement, not here.
   Customer? _knownCustomer;
 
+  /// Previous people whose name matches what has been typed, newest visit first.
+  ///
+  /// A read. Typing a name looks them up so the cashier can pick one and have the
+  /// phone and last address filled in. Nothing is created until the bill settles.
+  List<CustomerMatch> _nameMatches = const <CustomerMatch>[];
+
+  /// Bumped on every name keystroke so a slow search cannot overwrite a newer one.
+  int _nameSearchGeneration = 0;
+
   // ------------------------------------------------------------------- state ---
 
   CheckoutStep get step => _step;
@@ -294,6 +304,12 @@ class CheckoutController extends ChangeNotifier {
 
   /// True when the number entered belongs to a customer the outlet has already served.
   bool get isReturningCustomer => _knownCustomer != null;
+
+  /// Previous names matching what has been typed. Empty until two characters are in.
+  List<CustomerMatch> get nameMatches => _nameMatches;
+
+  /// True when the name field has people the cashier can pick from.
+  bool get hasNameMatches => _nameMatches.isNotEmpty;
 
   String get notes => _notes;
 
@@ -515,6 +531,14 @@ class CheckoutController extends ChangeNotifier {
     _orderType = type;
     _invalidateSettlement();
     notifyListeners();
+    if (type == OrderType.delivery && _customerAddress.isEmpty) {
+      unawaited(
+        _fillLastAddress(
+          customerId: _knownCustomer?.id,
+          customerName: _customerName,
+        ),
+      );
+    }
   }
 
   /// Opens the discount control, or closes it and removes any discount.
@@ -664,6 +688,27 @@ class CheckoutController extends ChangeNotifier {
     _customerName = value;
     _invalidateSettlement();
     notifyListeners();
+    unawaited(_searchNameMatches(value));
+  }
+
+  /// Fills the name, phone and last address from a previous bill.
+  ///
+  /// Called when the cashier picks a suggestion. Overwrites what is on screen,
+  /// because picking a person is choosing their details, not appending to them.
+  void applyCustomerMatch(CustomerMatch match) {
+    if (isSettled) {
+      return;
+    }
+    _customerName = match.name;
+    _applyMatchFields(match, overwriteFilled: true);
+    _nameMatches = const <CustomerMatch>[];
+    _nameSearchGeneration++;
+    _invalidateSettlement();
+    notifyListeners();
+    final String? phone = match.phone;
+    if (phone != null && phone.isNotEmpty) {
+      unawaited(_lookUpCustomer(phone));
+    }
   }
 
   void setCustomerAddress(String value) {
@@ -951,6 +996,114 @@ class CheckoutController extends ChangeNotifier {
     if (customer.name != null && customer.name!.trim().isNotEmpty && _customerName.isEmpty) {
       _customerName = customer.name!.trim();
     }
+    _notify();
+    unawaited(
+      _fillLastAddress(customerId: customer.id, customerName: customer.name),
+    );
+  }
+
+  /// Offers previous people whose name matches what has been typed.
+  ///
+  /// Two characters before searching, so a single letter does not dump the whole
+  /// directory under the field. The generation counter drops a result that landed
+  /// after the cashier had already typed further.
+  Future<void> _searchNameMatches(String enteredName) async {
+    final int generation = ++_nameSearchGeneration;
+    final String trimmed = enteredName.trim();
+    if (trimmed.length < 2) {
+      if (_nameMatches.isEmpty) {
+        return;
+      }
+      _nameMatches = const <CustomerMatch>[];
+      _notify();
+      return;
+    }
+
+    final Result<List<CustomerMatch>> found = await _customerRepository
+        .searchMatchesByName(trimmed);
+
+    if (generation != _nameSearchGeneration ||
+        _customerName != enteredName ||
+        isSettled) {
+      return;
+    }
+
+    final List<CustomerMatch> matches = found.fold<List<CustomerMatch>>(
+      onOk: (List<CustomerMatch> value) => value,
+      onErr: (AppFailure _) => const <CustomerMatch>[],
+    );
+    _nameMatches = matches;
+    _notify();
+
+    if (matches.length == 1) {
+      _applySingleNameMatch(matches.single);
+    }
+  }
+
+  /// Autofills from the only match when the typed name is clearly that person.
+  ///
+  /// Does not overwrite a phone or address already on the bill: the cashier may
+  /// be correcting this visit. A pick from the dropdown goes through
+  /// [applyCustomerMatch] and does overwrite.
+  void _applySingleNameMatch(CustomerMatch match) {
+    final String typed = _customerName.trim().toLowerCase();
+    if (typed != match.name.trim().toLowerCase()) {
+      return;
+    }
+    _applyMatchFields(match, overwriteFilled: false);
+    _notify();
+    final String? phone = match.phone;
+    if (phone != null && phone.isNotEmpty && _customerPhone.isNotEmpty) {
+      unawaited(_lookUpCustomer(_customerPhone));
+    }
+  }
+
+  void _applyMatchFields(
+    CustomerMatch match, {
+    required bool overwriteFilled,
+  }) {
+    final String? phone = match.phone?.trim();
+    if (phone != null && phone.isNotEmpty) {
+      if (overwriteFilled || _customerPhone.isEmpty) {
+        _customerPhone = CustomerPhone.digitsOf(phone);
+        _knownCustomer = null;
+      }
+    }
+    final String? address = match.address?.trim();
+    if (address != null && address.isNotEmpty) {
+      if (overwriteFilled || _customerAddress.isEmpty) {
+        _customerAddress = address;
+      }
+    }
+  }
+
+  /// Copies the last stored delivery address onto this bill when the field is empty.
+  Future<void> _fillLastAddress({
+    String? customerId,
+    String? customerName,
+  }) async {
+    if (_customerAddress.isNotEmpty || isSettled) {
+      return;
+    }
+
+    final Result<String?> found = await _customerRepository.findLastAddress(
+      customerId: customerId,
+      customerName: customerName,
+    );
+
+    if (_customerAddress.isNotEmpty || isSettled) {
+      return;
+    }
+
+    final String? address = found.fold<String?>(
+      onOk: (String? value) => value?.trim(),
+      onErr: (AppFailure _) => null,
+    );
+    if (address == null || address.isEmpty) {
+      return;
+    }
+    _customerAddress = address;
+    _invalidateSettlement();
     _notify();
   }
 

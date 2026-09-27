@@ -9,6 +9,7 @@ import '../../../../core/utils/result.dart';
 import '../../../orders/domain/models/order_status.dart';
 import '../../../payments/domain/models/refund_policy.dart';
 import '../../domain/models/customer.dart';
+import '../../domain/models/customer_match.dart';
 import '../../domain/models/customer_phone.dart';
 import '../../domain/models/customer_summary.dart';
 import '../../domain/repositories/customer_repository.dart';
@@ -78,6 +79,79 @@ class SqliteCustomerRepository implements CustomerRepository {
       );
       return rows.map(Customer.fromRow).toList(growable: false);
     }, context: 'search customers');
+  }
+
+  @override
+  Future<Result<List<CustomerMatch>>> searchMatchesByName(
+    String query, {
+    int limit = 8,
+  }) {
+    return SqliteErrorMapper.guard<List<CustomerMatch>>(() async {
+      final String trimmed = query.trim();
+      if (trimmed.isEmpty) {
+        return const <CustomerMatch>[];
+      }
+
+      final String pattern = '%$trimmed%';
+      final List<CustomerMatch> fromCustomers = await _matchesFromCustomers(
+        pattern,
+        limit: limit,
+      );
+      final List<CustomerMatch> fromOrders = await _matchesFromOrders(
+        pattern,
+        limit: limit,
+      );
+
+      return _mergeMatches(<CustomerMatch>[
+        ...fromCustomers,
+        ...fromOrders,
+      ], limit: limit);
+    }, context: 'search customers by name');
+  }
+
+  @override
+  Future<Result<String?>> findLastAddress({
+    String? customerId,
+    String? customerName,
+  }) {
+    return SqliteErrorMapper.guard<String?>(() async {
+      final String? id = customerId?.trim();
+      final String? name = customerName?.trim();
+      if ((id == null || id.isEmpty) && (name == null || name.isEmpty)) {
+        return null;
+      }
+
+      final List<String> clauses = <String>[
+        '${SyncColumns.isDeleted} = 0',
+        'customerAddress IS NOT NULL',
+        "TRIM(customerAddress) != ''",
+      ];
+      final List<Object?> args = <Object?>[];
+      if (id != null && id.isNotEmpty) {
+        clauses.add('customerId = ?');
+        args.add(id);
+      } else {
+        clauses.add('LOWER(TRIM(customerName)) = LOWER(?)');
+        args.add(name);
+      }
+
+      final List<Map<String, Object?>> rows = await _db.query(
+        SqliteTables.orders,
+        columns: <String>['customerAddress'],
+        where: clauses.join(' AND '),
+        whereArgs: args,
+        orderBy: '${SyncColumns.createdAt} DESC',
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        return null;
+      }
+      final String? address = rows.first['customerAddress'] as String?;
+      final String? trimmedAddress = address?.trim();
+      return trimmedAddress == null || trimmedAddress.isEmpty
+          ? null
+          : trimmedAddress;
+    }, context: 'find the last delivery address');
   }
 
   @override
@@ -285,5 +359,131 @@ class SqliteCustomerRepository implements CustomerRepository {
     final String phonePattern =
         normalised ?? (digits.isEmpty ? trimmed : digits);
     return <Object?>['%$phonePattern%', '%$trimmed%'];
+  }
+
+  /// Named customers whose name matches [pattern], with their last delivery
+  /// address if a bill carried one.
+  Future<List<CustomerMatch>> _matchesFromCustomers(
+    String pattern, {
+    required int limit,
+  }) async {
+    final List<Map<String, Object?>> rows = await _db.rawQuery(
+      '''
+      SELECT
+        c.${SyncColumns.id} AS customerId,
+        c.name AS name,
+        c.phone AS phone,
+        (
+          SELECT o.customerAddress
+          FROM ${SqliteTables.orders} o
+          WHERE o.${SyncColumns.isDeleted} = 0
+            AND o.customerAddress IS NOT NULL
+            AND TRIM(o.customerAddress) != ''
+            AND (o.customerId = c.${SyncColumns.id}
+                 OR LOWER(TRIM(o.customerName)) = LOWER(TRIM(c.name)))
+          ORDER BY o.${SyncColumns.createdAt} DESC
+          LIMIT 1
+        ) AS address,
+        (
+          SELECT MAX(o.${SyncColumns.createdAt})
+          FROM ${SqliteTables.orders} o
+          WHERE o.${SyncColumns.isDeleted} = 0
+            AND o.customerId = c.${SyncColumns.id}
+        ) AS lastOrderAt
+      FROM ${SqliteTables.customers} c
+      WHERE c.${SyncColumns.isDeleted} = 0
+        AND c.name IS NOT NULL
+        AND TRIM(c.name) != ''
+        AND c.name LIKE ?
+      ORDER BY (lastOrderAt IS NULL) ASC, lastOrderAt DESC, c.name ASC
+      LIMIT ?
+      ''',
+      <Object?>[pattern, limit],
+    );
+    return rows.map(_matchFromRow).toList(growable: false);
+  }
+
+  /// Names snapped onto settled bills, including walk-ins who never got a
+  /// customer row because they had no phone.
+  Future<List<CustomerMatch>> _matchesFromOrders(
+    String pattern, {
+    required int limit,
+  }) async {
+    final List<Map<String, Object?>> rows = await _db.rawQuery(
+      '''
+      SELECT
+        o.customerId AS customerId,
+        o.customerName AS name,
+        c.phone AS phone,
+        o.customerAddress AS address,
+        o.${SyncColumns.createdAt} AS lastOrderAt
+      FROM ${SqliteTables.orders} o
+      LEFT JOIN ${SqliteTables.customers} c
+        ON c.${SyncColumns.id} = o.customerId
+        AND c.${SyncColumns.isDeleted} = 0
+      WHERE o.${SyncColumns.isDeleted} = 0
+        AND o.customerName IS NOT NULL
+        AND TRIM(o.customerName) != ''
+        AND o.customerName LIKE ?
+      ORDER BY o.${SyncColumns.createdAt} DESC
+      LIMIT ?
+      ''',
+      <Object?>[pattern, limit],
+    );
+    return rows.map(_matchFromRow).toList(growable: false);
+  }
+
+  static CustomerMatch _matchFromRow(Map<String, Object?> row) {
+    final Object? lastOrderAt = row['lastOrderAt'];
+    final String name = (row['name'] as String?)?.trim() ?? '';
+    final String? phone = (row['phone'] as String?)?.trim();
+    final String? address = (row['address'] as String?)?.trim();
+    final String? customerId = (row['customerId'] as String?)?.trim();
+    return CustomerMatch(
+      name: name,
+      phone: phone == null || phone.isEmpty ? null : phone,
+      address: address == null || address.isEmpty ? null : address,
+      customerId: customerId == null || customerId.isEmpty ? null : customerId,
+      lastOrderAt: lastOrderAt is int
+          ? DateTime.fromMillisecondsSinceEpoch(lastOrderAt, isUtc: true)
+          : null,
+    );
+  }
+
+  /// One row per person. Newest visit first, empty names dropped.
+  static List<CustomerMatch> _mergeMatches(
+    List<CustomerMatch> matches, {
+    required int limit,
+  }) {
+    final List<CustomerMatch> merged = <CustomerMatch>[];
+    for (final CustomerMatch match in matches) {
+      if (match.name.trim().isEmpty) {
+        continue;
+      }
+      final int index = merged.indexWhere(match.isSamePersonAs);
+      if (index < 0) {
+        merged.add(match);
+      } else {
+        merged[index] = merged[index].mergedWith(match);
+      }
+    }
+    merged.sort((CustomerMatch a, CustomerMatch b) {
+      final DateTime? aAt = a.lastOrderAt;
+      final DateTime? bAt = b.lastOrderAt;
+      if (aAt == null && bAt == null) {
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      }
+      if (aAt == null) {
+        return 1;
+      }
+      if (bAt == null) {
+        return -1;
+      }
+      return bAt.compareTo(aAt);
+    });
+    if (merged.length <= limit) {
+      return List<CustomerMatch>.unmodifiable(merged);
+    }
+    return List<CustomerMatch>.unmodifiable(merged.take(limit));
   }
 }

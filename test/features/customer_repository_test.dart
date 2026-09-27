@@ -3,7 +3,10 @@ import 'package:brisko_billing/core/error/app_failure.dart';
 import 'package:brisko_billing/core/money/money.dart';
 import 'package:brisko_billing/features/customers/data/repositories/sqlite_customer_repository.dart';
 import 'package:brisko_billing/features/customers/domain/models/customer.dart';
+import 'package:brisko_billing/features/customers/domain/models/customer_match.dart';
 import 'package:brisko_billing/features/customers/domain/models/customer_summary.dart';
+import 'package:brisko_billing/features/orders/data/repositories/sqlite_order_repository.dart';
+import 'package:brisko_billing/features/orders/domain/models/order_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/fixtures.dart';
@@ -14,10 +17,12 @@ void main() {
 
   late SqliteDatabase database;
   late SqliteCustomerRepository customers;
+  late SqliteOrderRepository orders;
 
   setUp(() async {
     database = await TestDatabase.openInMemory();
     customers = SqliteCustomerRepository(database: database);
+    orders = SqliteOrderRepository(database: database);
   });
 
   tearDown(() async {
@@ -174,6 +179,99 @@ void main() {
     expect((await customers.search('98123')).valueOrNull, hasLength(1));
     expect((await customers.search('Beta')).valueOrNull, hasLength(1));
     expect((await customers.search('Test')).valueOrNull, hasLength(2));
+  });
+
+  test('searchMatchesByName returns phone and last address', () async {
+    final Customer ravi = (await customers.findOrCreateByPhone(
+      '9000000101',
+      name: 'Ravi',
+    )).valueOrNull!;
+    await orders.saveOrder(
+      Fixtures.order(
+        orderNumber: 'B-0001',
+        status: OrderStatus.completed,
+        customerId: ravi.id,
+        customerName: 'Ravi',
+        customerAddress: '12 Baraut Road',
+      ),
+    );
+
+    final List<CustomerMatch> matches =
+        (await customers.searchMatchesByName('Rav')).valueOrNull!;
+
+    expect(matches, hasLength(1));
+    expect(matches.single.name, 'Ravi');
+    expect(matches.single.phone, '9000000101');
+    expect(matches.single.address, '12 Baraut Road');
+  });
+
+  test('searchMatchesByName includes a walk-in name with no phone', () async {
+    await orders.saveOrder(
+      Fixtures.order(
+        orderNumber: 'B-0002',
+        status: OrderStatus.completed,
+        customerName: 'Walk-in Ravi',
+        customerAddress: 'Opp. library',
+      ),
+    );
+
+    final List<CustomerMatch> matches =
+        (await customers.searchMatchesByName('Walk-in')).valueOrNull!;
+
+    expect(matches, hasLength(1));
+    expect(matches.single.name, 'Walk-in Ravi');
+    expect(matches.single.phone, isNull);
+    expect(matches.single.address, 'Opp. library');
+  });
+
+  test('searchMatchesByName keeps two people with the same name apart', () async {
+    await customers.findOrCreateByPhone('9000000102', name: 'Ravi');
+    await customers.findOrCreateByPhone('9000000103', name: 'Ravi');
+
+    final List<CustomerMatch> matches =
+        (await customers.searchMatchesByName('Ravi')).valueOrNull!;
+
+    expect(matches, hasLength(2));
+    expect(
+      matches.map((CustomerMatch match) => match.phone).toSet(),
+      <String>{'9000000102', '9000000103'},
+    );
+  });
+
+  test('findLastAddress returns the newest stored address', () async {
+    final Customer ravi = (await customers.findOrCreateByPhone(
+      '9000000104',
+      name: 'Ravi',
+    )).valueOrNull!;
+    await orders.saveOrder(
+      Fixtures.order(
+        orderNumber: 'B-0003',
+        status: OrderStatus.completed,
+        customerId: ravi.id,
+        customerName: 'Ravi',
+        customerAddress: 'Old house',
+        createdAt: DateTime.utc(2026, 1, 1),
+      ),
+    );
+    await orders.saveOrder(
+      Fixtures.order(
+        orderNumber: 'B-0004',
+        status: OrderStatus.completed,
+        customerId: ravi.id,
+        customerName: 'Ravi',
+        customerAddress: 'New house',
+        createdAt: DateTime.utc(2026, 2, 1),
+      ),
+    );
+
+    expect(
+      (await customers.findLastAddress(customerId: ravi.id)).valueOrNull,
+      'New house',
+    );
+    expect(
+      (await customers.findLastAddress(customerName: 'Ravi')).valueOrNull,
+      'New house',
+    );
   });
 
   test('a soft-deleted customer is hidden from lookup', () async {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/money/money_display.dart';
 import '../../../customers/domain/models/customer.dart';
+import '../../../customers/domain/models/customer_match.dart';
 import '../../../customers/domain/models/customer_phone.dart';
 import '../../../orders/domain/models/order_type.dart';
 import '../../domain/models/bill_discount.dart';
@@ -384,10 +385,16 @@ class _CustomerInfoFieldsState extends State<_CustomerInfoFields> {
             hintText: 'Name on the bill',
             prefixIcon: const Icon(Icons.person_outline),
             errorText: nameProblem,
-            helperText: 'Needed for every order.',
+            helperText: controller.hasNameMatches
+                ? 'Pick a previous customer to fill their details.'
+                : 'Needed for every order.',
           ),
           onChanged: context.read<CheckoutController>().setCustomerName,
         ),
+        if (controller.hasNameMatches) ...<Widget>[
+          const SizedBox(height: 8),
+          _NameMatchList(matches: controller.nameMatches),
+        ],
         const SizedBox(height: 16),
         TextField(
           controller: _phoneField,
@@ -466,6 +473,44 @@ class _AddressFieldState extends State<_AddressField> {
         helperText: 'Needed for a delivery order.',
       ),
       onChanged: context.read<CheckoutController>().setCustomerAddress,
+    );
+  }
+}
+
+/// Previous people whose name matches what has been typed.
+///
+/// A pick copies the stored name, phone and last address onto this bill. The
+/// rows are a hint, not a gate: the cashier can keep typing a new name.
+class _NameMatchList extends StatelessWidget {
+  const _NameMatchList({required this.matches});
+
+  final List<CustomerMatch> matches;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final CheckoutController controller = context.read<CheckoutController>();
+
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+      child: Column(
+        children: <Widget>[
+          for (int index = 0; index < matches.length; index++) ...<Widget>[
+            if (index > 0) const Divider(height: 1),
+            ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.person_search_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(matches[index].name),
+              subtitle: Text(matches[index].detailLine),
+              onTap: () => controller.applyCustomerMatch(matches[index]),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

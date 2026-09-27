@@ -9,6 +9,7 @@ import 'package:brisko_billing/features/billing/presentation/controllers/billing
 import 'package:brisko_billing/features/billing/presentation/controllers/checkout_controller.dart';
 import 'package:brisko_billing/features/customers/data/repositories/sqlite_customer_repository.dart';
 import 'package:brisko_billing/features/customers/domain/models/customer.dart';
+import 'package:brisko_billing/features/customers/domain/models/customer_match.dart';
 import 'package:brisko_billing/features/inventory/data/repositories/sqlite_inventory_deduction_repository.dart';
 import 'package:brisko_billing/features/menu/data/repositories/sqlite_menu_repository.dart';
 import 'package:brisko_billing/features/orders/data/repositories/sqlite_order_repository.dart';
@@ -24,6 +25,7 @@ import 'package:brisko_billing/features/printing/domain/services/print_service.d
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/fake_escpos_printer.dart';
+import '../helpers/fixtures.dart';
 import '../helpers/seeded_cart.dart';
 import '../helpers/test_database.dart';
 import '../helpers/test_printing.dart';
@@ -437,6 +439,63 @@ void main() {
         expect(await rowCount('customers'), 1);
       },
     );
+
+    test('typing a known name fills the phone and last address', () async {
+      final Customer ravi = (await customers.findOrCreateByPhone(
+        '9000000111',
+        name: 'Ravi',
+      )).valueOrNull!;
+      await orders.saveOrder(
+        Fixtures.order(
+          orderNumber: 'B-0101',
+          status: OrderStatus.completed,
+          customerId: ravi.id,
+          customerName: 'Ravi',
+          customerAddress: '12 Baraut Road',
+        ),
+      );
+
+      await ringUpPizza();
+      final CheckoutController controller = openCheckout(withCustomer: false);
+
+      controller.setCustomerName('Ravi');
+      for (int turn = 0; turn < 50 && !controller.hasNameMatches; turn++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(controller.hasNameMatches, isTrue);
+      expect(controller.customerPhone, '9000000111');
+      expect(controller.customerAddress, '12 Baraut Road');
+    });
+
+    test('picking a name match fills that person\'s details', () async {
+      await customers.findOrCreateByPhone('9000000112', name: 'Ravi');
+      await customers.findOrCreateByPhone('9000000113', name: 'Ravinder');
+
+      await ringUpPizza();
+      final CheckoutController controller = openCheckout(withCustomer: false);
+
+      controller.setCustomerName('Rav');
+      for (
+        int turn = 0;
+        turn < 50 && controller.nameMatches.length < 2;
+        turn++
+      ) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(controller.nameMatches, hasLength(2));
+      expect(controller.customerPhone, isEmpty);
+
+      final CustomerMatch match = controller.nameMatches.firstWhere(
+        (CustomerMatch item) => item.phone == '9000000113',
+      );
+      controller.applyCustomerMatch(match);
+
+      expect(controller.customerName, 'Ravinder');
+      expect(controller.customerPhone, '9000000113');
+      expect(controller.hasNameMatches, isFalse);
+    });
 
     test('an unknown number is not recognised and is not created', () async {
       await ringUpPizza();

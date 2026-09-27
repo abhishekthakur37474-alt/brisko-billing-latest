@@ -1,5 +1,6 @@
 import '../../../../core/utils/result.dart';
 import '../models/customer.dart';
+import '../models/customer_match.dart';
 import '../models/customer_summary.dart';
 
 /// Read and write access to customer records.
@@ -19,6 +20,23 @@ abstract interface class CustomerRepository {
 
   /// Partial match on name or phone, for the search field.
   Future<Result<List<Customer>>> search(String query, {int limit});
+
+  /// Previous names that match [query], with the last phone and address on file.
+  ///
+  /// Used at checkout so typing a name can offer the associated details. One row
+  /// per person (name + phone). Newest visit first.
+  Future<Result<List<CustomerMatch>>> searchMatchesByName(
+    String query, {
+    int limit = 8,
+  });
+
+  /// The most recent delivery address stored for this customer or this name.
+  ///
+  /// `null` when none was ever taken. A read, never a write.
+  Future<Result<String?>> findLastAddress({
+    String? customerId,
+    String? customerName,
+  });
 
   Future<Result<List<Customer>>> loadAll();
 
