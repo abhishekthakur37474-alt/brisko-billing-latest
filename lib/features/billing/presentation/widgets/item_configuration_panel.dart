@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_display.dart';
 import '../../../menu/domain/models/menu_item.dart';
@@ -261,7 +262,7 @@ class _PanelFooter extends StatelessWidget {
           FilledButton.icon(
             // Disabled until the draft is complete. The controller decides.
             onPressed: controller.canAddToCart
-                ? context.read<BillingController>().addConfiguredItemToCart
+                ? () => _addToBillAndReview(context)
                 : null,
             icon: const Icon(Icons.add_shopping_cart),
             label: const Text('Add to bill'),
@@ -269,6 +270,16 @@ class _PanelFooter extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _addToBillAndReview(BuildContext context) {
+    final NavigatorState navigator = Navigator.of(context);
+    final MaterialApp? app = context
+        .findAncestorWidgetOfExactType<MaterialApp>();
+    context.read<BillingController>().addConfiguredItemToCart();
+    if (app?.routes?.containsKey(AppRoutes.checkout) ?? false) {
+      navigator.pushNamed(AppRoutes.checkout);
+    }
   }
 }
 

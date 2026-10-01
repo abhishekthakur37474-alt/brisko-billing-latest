@@ -315,7 +315,7 @@ void main() {
       expect(receipt.hasLineContaining('Cheese Pizza'), isTrue);
       expect(receipt.hasLineContaining('Medium'), isTrue);
       expect(receipt.hasLineContaining('Extra Cheese'), isTrue);
-      expect(receipt.hasLineContaining('Takeaway'), isTrue);
+      expect(receipt.hasLineContaining('Pack'), isTrue);
       // The figures, and how they were paid.
       expect(receipt.hasLineContaining('Subtotal'), isTrue);
       expect(receipt.hasLineContaining('TOTAL'), isTrue);

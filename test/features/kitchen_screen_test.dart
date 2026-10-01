@@ -143,7 +143,7 @@ void main() {
       expect(inCard(order, find.text('Cheese Pizza (Medium)')), findsOneWidget);
       expect(inCard(order, find.text('Extra Cheese')), findsOneWidget);
       expect(inCard(order, find.text('\u00d72')), findsOneWidget);
-      expect(inCard(order, find.text('Takeaway')), findsOneWidget);
+      expect(inCard(order, find.text('Pack')), findsOneWidget);
       // Its own slip number, alongside the order number.
       expect(
         inCard(order, find.textContaining(RegExp(r'^K\d{8}-0001$'))),

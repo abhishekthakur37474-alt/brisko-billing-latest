@@ -759,37 +759,15 @@ void main() {
       expect(controller.canProceedToConfirm, isTrue);
     });
 
-    test('cash must cover the bill before it can be confirmed', () async {
+    test('cash covers the bill as soon as it is chosen', () async {
       await ringUpPizza();
       final CheckoutController controller = openCheckout();
       controller.goToPayment();
       controller.selectPaymentMethod(PaymentMethod.cash);
 
-      expect(controller.isTenderSufficient, isFalse);
-      expect(controller.canProceedToConfirm, isFalse);
-      expect(controller.canSubmit, isFalse);
-    });
-
-    test('cash short of the bill is refused', () async {
-      await ringUpPizza();
-      final CheckoutController controller = openCheckout();
-      controller.goToPayment();
-      controller.selectPaymentMethod(PaymentMethod.cash);
-
-      // ₹300 against ₹320.
-      controller.addTenderNote(const Money.fromRupees(200));
-      controller.addTenderNote(const Money.fromRupees(100));
-
-      expect(controller.cashTender.tendered, Money.parse('300'));
-      expect(controller.cashTender.shortfall, Money.parse('20'));
-      expect(controller.canProceedToConfirm, isFalse);
-
-      controller.goToConfirm();
-      expect(controller.step, CheckoutStep.payment);
-
-      await controller.submit();
-      expect(controller.isSettled, isFalse);
-      expect(await rowCount('orders'), 0);
+      expect(controller.isTenderSufficient, isTrue);
+      expect(controller.cashTender.isExact, isTrue);
+      expect(controller.canProceedToConfirm, isTrue);
     });
 
     test('exact cash leaves no change', () async {
@@ -808,6 +786,7 @@ void main() {
       final CheckoutController controller = openCheckout();
       controller.goToPayment();
       controller.selectPaymentMethod(PaymentMethod.cash);
+      controller.clearTender();
       controller.addTenderNote(const Money.fromRupees(500));
 
       expect(controller.cashTender.tendered, Money.parse('500'));
@@ -831,6 +810,7 @@ void main() {
       final CheckoutController controller = openCheckout();
       controller.goToPayment();
       controller.selectPaymentMethod(PaymentMethod.cash);
+      controller.clearTender();
 
       for (final int digit in <int>[5, 0, 0, 0, 0]) {
         controller.appendTenderDigit(digit);
@@ -863,13 +843,15 @@ void main() {
       final CheckoutController controller = openCheckout();
       controller.goToPayment();
       controller.selectPaymentMethod(PaymentMethod.cash);
+      controller.clearTender();
       controller.addTenderNote(const Money.fromRupees(500));
       expect(controller.cashTender.tendered, Money.parse('500'));
 
       controller.selectPaymentMethod(PaymentMethod.card);
       controller.selectPaymentMethod(PaymentMethod.cash);
 
-      expect(controller.cashTender.tendered, Money.zero);
+      expect(controller.cashTender.tendered, Money.parse('320'));
+      expect(controller.cashTender.isExact, isTrue);
       expect(controller.cashTender.payable, Money.parse('320'));
     });
 

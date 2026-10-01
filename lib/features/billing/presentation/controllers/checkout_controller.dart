@@ -734,9 +734,12 @@ class CheckoutController extends ChangeNotifier {
       return;
     }
     _paymentMethod = method;
-    // A method change resets the counted cash: leaving ₹500 on screen after
-    // switching to UPI and back would show a tender nobody put down.
-    _cashTender = CashTender(payable: amountPayable);
+    // Cash is always the exact payable amount. A method change still resets any
+    // previously counted notes so switching to UPI and back cannot leave a
+    // tender nobody put down.
+    _cashTender = method == PaymentMethod.cash
+        ? CashTender(payable: amountPayable).exact()
+        : CashTender(payable: amountPayable);
     _reference = '';
     _invalidateSettlement();
     notifyListeners();

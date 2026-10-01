@@ -15,7 +15,7 @@ enum OrderType {
 
   String get label => switch (this) {
     OrderType.dineIn => 'Dine-in',
-    OrderType.takeaway => 'Takeaway',
+    OrderType.takeaway => 'Pack',
     OrderType.delivery => 'Delivery',
     OrderType.onlineManual => 'Online (manual)',
   };

@@ -165,19 +165,15 @@ class _CartSummary extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          FilledButton.icon(
-            // The cart is what makes a bill; there is nothing to settle without
-            // one. Opening checkout does not commit anything, and backing out of
-            // it leaves this cart exactly as it is.
-            onPressed: cart.isEmpty
-                ? null
-                : () => Navigator.of(context).pushNamed(AppRoutes.checkout),
-            icon: const Icon(Icons.point_of_sale),
-            // "Checkout" rather than "Charge": this opens the settlement flow, it
-            // does not take any money. The charge is confirmed at the end of it.
-            label: Text('Checkout ${cart.subtotal.formatted}'),
-          ),
-          const SizedBox(height: 8),
+          // Checkout is skipped: adding an item opens Review bill directly.
+          // FilledButton.icon(
+          //   onPressed: cart.isEmpty
+          //       ? null
+          //       : () => Navigator.of(context).pushNamed(AppRoutes.checkout),
+          //   icon: const Icon(Icons.point_of_sale),
+          //   label: Text('Checkout ${cart.subtotal.formatted}'),
+          // ),
+          // const SizedBox(height: 8),
           const _HoldRow(),
           const _HeldNotice(),
           const SizedBox(height: 8),

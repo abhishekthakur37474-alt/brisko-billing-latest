@@ -508,10 +508,6 @@ void main() {
       await tap(tester, find.text('Cheese Pizza'));
       await tap(tester, find.textContaining('Medium'));
       await tap(tester, find.widgetWithText(FilledButton, 'Add to bill'));
-      await tap(
-        tester,
-        find.widgetWithText(FilledButton, 'Checkout \u20b9250.00'),
-      );
 
       expect(find.text('Review bill'), findsOneWidget);
 

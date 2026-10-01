@@ -103,6 +103,9 @@ void main() {
     await tap(tester, find.text('Cheese Pizza').first);
     await tap(tester, find.textContaining('Medium').first);
     await tap(tester, find.widgetWithText(FilledButton, 'Add to bill').first);
+    if (find.text('Review bill').evaluate().isNotEmpty) {
+      await tap(tester, find.byType(BackButton));
+    }
   }
 
   /// Holds one pizza directly, so a list test does not depend on the hold UI.
@@ -262,7 +265,6 @@ void main() {
       // The bill is still on screen and still sellable.
       expect(find.text('No items yet'), findsNothing);
       expect(find.textContaining('Bill held'), findsNothing);
-      expect(find.textContaining('Checkout'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -309,11 +311,8 @@ void main() {
       await openHeldBills(tester);
       await tap(tester, find.widgetWithText(FilledButton, 'Resume'));
 
-      await tap(tester, find.textContaining('Checkout'));
-
-      // The existing settlement flow opens on the resumed bill.
-      expect(find.text('Review bill'), findsOneWidget);
-      expect(find.textContaining('Take payment'), findsOneWidget);
+      expect(find.byType(CartPanel), findsOneWidget);
+      expect(find.text('No items yet'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

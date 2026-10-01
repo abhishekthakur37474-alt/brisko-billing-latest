@@ -345,13 +345,8 @@ void main() {
       await tap(tester, find.textContaining('Medium'));
       await tap(tester, find.textContaining('Extra Cheese'));
       await tap(tester, find.widgetWithText(FilledButton, 'Add to bill'));
-      await tap(
-        tester,
-        find.widgetWithText(FilledButton, 'Checkout \u20b9320.00'),
-      );
       await tap(tester, find.widgetWithText(FilledButton, 'Take payment'));
       await tap(tester, inCheckout(find.text('Cash')));
-      await tap(tester, find.widgetWithText(OutlinedButton, 'Exact'));
       await tap(tester, find.widgetWithText(FilledButton, 'Review payment'));
       await tap(
         tester,

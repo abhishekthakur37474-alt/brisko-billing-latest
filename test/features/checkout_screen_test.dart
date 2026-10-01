@@ -125,8 +125,9 @@ void main() {
   Finder inCheckout(Finder matching) =>
       find.descendant(of: find.byType(CheckoutScreen), matching: matching);
 
-  Future<void> openCheckout(WidgetTester tester) =>
-      tap(tester, find.widgetWithText(FilledButton, 'Checkout \u20b9320.00'));
+  Future<void> openCheckout(WidgetTester tester) async {
+    // Add to bill already opens Review bill.
+  }
 
   /// Name every order requires before payment. Phone is optional.
   Future<void> fillCustomer(WidgetTester tester) async {
@@ -142,30 +143,20 @@ void main() {
   }
 
   group('opening checkout from the cart', () {
-    testWidgets('the button is disabled until there is a bill', (
+    testWidgets('review bill stays closed until an item is added', (
       WidgetTester tester,
     ) async {
       await pumpBilling(tester);
 
-      final Finder checkout = find.widgetWithText(
-        FilledButton,
-        'Checkout \u20b90.00',
-      );
-      expect(tester.widget<FilledButton>(checkout).onPressed, isNull);
+      expect(find.byType(CheckoutScreen), findsNothing);
+      expect(find.text('Review bill'), findsNothing);
     });
 
-    testWidgets('the button carries the amount and opens the flow', (
+    testWidgets('adding an item opens review bill', (
       WidgetTester tester,
     ) async {
       await pumpBilling(tester);
       await ringUpPizza(tester);
-
-      expect(
-        find.widgetWithText(FilledButton, 'Checkout \u20b9320.00'),
-        findsOneWidget,
-      );
-
-      await openCheckout(tester);
 
       expect(find.byType(CheckoutScreen), findsOneWidget);
       expect(find.text('Review bill'), findsOneWidget);
@@ -191,14 +182,9 @@ void main() {
 
       await tap(tester, inCheckout(find.text('Cash')));
       expect(inCheckout(find.text('Cash received')), findsOneWidget);
-      expect(inCheckout(find.text('Still needed')), findsOneWidget);
-
-      // Not enough on the counter yet.
-      final Finder review = find.widgetWithText(FilledButton, 'Review payment');
-      expect(tester.widget<FilledButton>(review).onPressed, isNull);
-
-      await tap(tester, find.widgetWithText(OutlinedButton, 'Exact'));
       expect(inCheckout(find.text('Change')), findsOneWidget);
+
+      final Finder review = find.widgetWithText(FilledButton, 'Review payment');
       expect(tester.widget<FilledButton>(review).onPressed, isNotNull);
 
       await tap(tester, review);
@@ -220,7 +206,7 @@ void main() {
       expect(inCheckout(find.text('Completed')), findsOneWidget);
     });
 
-    testWidgets('cash: the keypad and the change owed', (
+    testWidgets('cash: selecting it tenders the exact amount', (
       WidgetTester tester,
     ) async {
       await pumpBilling(tester);
@@ -230,51 +216,21 @@ void main() {
       await tap(tester, find.widgetWithText(FilledButton, 'Take payment'));
       await tap(tester, inCheckout(find.text('Cash')));
 
-      // 5, 0, 0, then two zeroes at once: ₹500.00
-      await tap(tester, find.widgetWithText(OutlinedButton, '5'));
-      await tap(tester, find.widgetWithText(OutlinedButton, '0'));
-      await tap(tester, find.widgetWithText(OutlinedButton, '0'));
-      await tap(tester, find.widgetWithText(OutlinedButton, '00'));
-
-      expect(inCheckout(find.text('\u20b9500.00')), findsOneWidget);
-      expect(inCheckout(find.text('\u20b9180.00')), findsOneWidget);
+      expect(inCheckout(find.text('Tendered')), findsOneWidget);
+      expect(inCheckout(find.text('Change')), findsOneWidget);
+      expect(inCheckout(find.text('\u20b90.00')), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, '5'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Exact'), findsNothing);
 
       await tap(tester, find.widgetWithText(FilledButton, 'Review payment'));
       expect(inCheckout(find.text('Cash tendered')), findsOneWidget);
-      expect(inCheckout(find.text('Change to give')), findsOneWidget);
 
       await tap(
         tester,
         find.widgetWithText(FilledButton, 'Charge \u20b9320.00'),
       );
 
-      expect(find.text('Give change'), findsOneWidget);
-      expect(inCheckout(find.text('\u20b9180.00')), findsOneWidget);
-    });
-
-    testWidgets('a short tender cannot be confirmed', (
-      WidgetTester tester,
-    ) async {
-      await pumpBilling(tester);
-      await ringUpPizza(tester);
-      await openCheckout(tester);
-      await fillCustomer(tester);
-      await tap(tester, find.widgetWithText(FilledButton, 'Take payment'));
-      await tap(tester, inCheckout(find.text('Cash')));
-
-      // ₹200 against a ₹320 bill.
-      await tap(tester, find.widgetWithText(OutlinedButton, '+\u20b9200.00'));
-
-      expect(inCheckout(find.text('Still needed')), findsOneWidget);
-      expect(inCheckout(find.text('\u20b9120.00')), findsOneWidget);
-      expect(
-        tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Review payment'),
-            )
-            .onPressed,
-        isNull,
-      );
+      expect(find.text('Bill settled'), findsWidgets);
     });
 
     testWidgets('upi: no tender to count, a reference to record', (
@@ -322,7 +278,6 @@ void main() {
       await fillCustomer(tester);
       await tap(tester, find.widgetWithText(FilledButton, 'Take payment'));
       await tap(tester, inCheckout(find.text('Cash')));
-      await tap(tester, find.widgetWithText(OutlinedButton, 'Exact'));
       await tap(tester, find.widgetWithText(FilledButton, 'Review payment'));
       expect(find.text('Confirm payment'), findsOneWidget);
 
@@ -338,11 +293,6 @@ void main() {
       await tap(tester, find.byType(BackButton));
 
       expect(find.byType(CheckoutScreen), findsNothing);
-      // And the bill is exactly where it was.
-      expect(
-        find.widgetWithText(FilledButton, 'Checkout \u20b9320.00'),
-        findsOneWidget,
-      );
       expect(find.text('Cheese Pizza (Medium)'), findsOneWidget);
     });
 
@@ -355,7 +305,6 @@ void main() {
       await fillCustomer(tester);
       await tap(tester, find.widgetWithText(FilledButton, 'Take payment'));
       await tap(tester, inCheckout(find.text('Cash')));
-      await tap(tester, find.widgetWithText(OutlinedButton, 'Exact'));
       await tap(tester, find.widgetWithText(FilledButton, 'Review payment'));
       await tap(
         tester,
@@ -369,10 +318,6 @@ void main() {
       // Back on billing, with an empty cart.
       expect(find.byType(CheckoutScreen), findsNothing);
       expect(find.text('No items yet'), findsOneWidget);
-      expect(
-        find.widgetWithText(FilledButton, 'Checkout \u20b90.00'),
-        findsOneWidget,
-      );
     });
   });
 
@@ -573,7 +518,6 @@ void main() {
         inCheckout(find.widgetWithText(FilledButton, 'Take payment')),
       );
       await tap(tester, inCheckout(find.text('Cash')));
-      await tap(tester, inCheckout(find.textContaining('Exact')));
       await tap(
         tester,
         inCheckout(find.widgetWithText(FilledButton, 'Review payment')),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/money/money.dart';
 import '../../../../core/money/money_display.dart';
 import '../../../payments/domain/models/payment_method.dart';
 import '../../domain/models/cash_tender.dart';
@@ -9,9 +8,9 @@ import '../controllers/checkout_controller.dart';
 
 /// Second step: how the bill is being paid, and for cash, what was handed over.
 ///
-/// The amount payable is fixed by the bill. A non-cash payment records exactly that
-/// amount, so there is nothing to key in. Cash is the only method where the customer
-/// can hand over more than the bill, so it is the only one with a keypad.
+/// The amount payable is fixed by the bill. Cash and non-cash both record that
+/// amount: cash is tendered exactly when the method is chosen, so there is no
+/// keypad.
 class CheckoutPaymentStep extends StatelessWidget {
   const CheckoutPaymentStep({super.key});
 
@@ -146,135 +145,7 @@ class _CashSection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        const _QuickTenderButtons(),
-        const SizedBox(height: 16),
-        const _TenderKeypad(),
       ],
-    );
-  }
-}
-
-/// Exact amount, plus the notes a customer actually hands over.
-class _QuickTenderButtons extends StatelessWidget {
-  const _QuickTenderButtons();
-
-  @override
-  Widget build(BuildContext context) {
-    final CheckoutController controller = context.read<CheckoutController>();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: <Widget>[
-        OutlinedButton(
-          onPressed: controller.tenderExact,
-          child: const Text('Exact'),
-        ),
-        for (final Money note in CashTender.denominations)
-          OutlinedButton(
-            onPressed: () => controller.addTenderNote(note),
-            child: Text('+${note.formatted}'),
-          ),
-      ],
-    );
-  }
-}
-
-/// Digit entry for the amount tendered.
-///
-/// Each press shifts the amount one decimal place, so pressing 3, 2, 0, 0 counts up
-/// through ₹0.03, ₹0.32, ₹3.20, ₹32.00. The amount is never read back from the text on
-/// screen, which is why there is no decimal point to press.
-class _TenderKeypad extends StatelessWidget {
-  const _TenderKeypad();
-
-  static const List<List<int>> _rows = <List<int>>[
-    <int>[7, 8, 9],
-    <int>[4, 5, 6],
-    <int>[1, 2, 3],
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final CheckoutController controller = context.read<CheckoutController>();
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 320),
-      child: Column(
-        children: <Widget>[
-          for (final List<int> row in _rows)
-            Row(
-              children: <Widget>[
-                for (final int digit in row)
-                  _KeypadKey(
-                    label: '$digit',
-                    onPressed: () => controller.appendTenderDigit(digit),
-                  ),
-              ],
-            ),
-          Row(
-            children: <Widget>[
-              _KeypadKey(
-                label: '0',
-                onPressed: () => controller.appendTenderDigit(0),
-              ),
-              // Two zeroes at once: most amounts are whole rupees, so this is the
-              // key that turns 3, 2 into ₹32.00.
-              _KeypadKey(
-                label: '00',
-                onPressed: () {
-                  controller.appendTenderDigit(0);
-                  controller.appendTenderDigit(0);
-                },
-              ),
-              _KeypadKey(
-                label: '\u232b',
-                tooltip: 'Delete the last digit',
-                onPressed: controller.removeTenderDigit,
-                onLongPress: controller.clearTender,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _KeypadKey extends StatelessWidget {
-  const _KeypadKey({
-    required this.label,
-    required this.onPressed,
-    this.tooltip,
-    this.onLongPress,
-  });
-
-  final String label;
-
-  final VoidCallback onPressed;
-
-  final String? tooltip;
-
-  final VoidCallback? onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget key = Padding(
-      padding: const EdgeInsets.all(4),
-      child: OutlinedButton(
-        onPressed: onPressed,
-        onLongPress: onLongPress,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 56),
-          textStyle: Theme.of(context).textTheme.titleMedium,
-        ),
-        child: Text(label),
-      ),
-    );
-
-    return Expanded(
-      child: tooltip == null ? key : Tooltip(message: tooltip!, child: key),
     );
   }
 }
