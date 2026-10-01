@@ -290,7 +290,12 @@ class _HistoryRow extends StatelessWidget {
     return <String>[
       PrintTimestamp.stamp(bill.placedAt),
       bill.orderType.label,
-      if (bill.paymentMethod != null) bill.paymentMethod!.label,
+      // A paid bill names the method that settled it; an unpaid one says so outright,
+      // because there is no method to name.
+      if (bill.order.isPaid) ...<String>[
+        if (bill.paymentMethod != null) bill.paymentMethod!.label,
+      ] else
+        'Unpaid',
       if (bill.kotNumber != null) 'KOT ${bill.kotNumber}',
     ].join('  ·  ');
   }

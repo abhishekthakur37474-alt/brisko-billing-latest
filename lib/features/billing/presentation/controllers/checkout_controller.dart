@@ -510,6 +510,14 @@ class CheckoutController extends ChangeNotifier {
   /// True when the money may be taken and the bill written.
   bool get canSubmit => canProceedToConfirm && !_isSubmitting && !isSettled;
 
+  /// True when the review step may be closed as an unpaid bill.
+  ///
+  /// The same completeness the review step needs to take payment, because an unpaid
+  /// bill is still a committed sale: it needs a customer where one is required and a
+  /// readable discount. What it does not need is a tender.
+  bool get canSettleUnpaid =>
+      canProceedToPayment && !_isSubmitting && !isSettled;
+
   /// The step [goBack] would move to, or `null` when there is nowhere to go.
   ///
   /// `null` at [CheckoutStep.review] means the flow is at its start and the screen
@@ -821,8 +829,17 @@ class CheckoutController extends ChangeNotifier {
   /// `onSettled` and the flow moves to [CheckoutStep.success]. On failure nothing at all
   /// was persisted — not even the customer record — the cart is untouched, and the same
   /// settlement can be submitted again.
-  Future<void> submit() async {
-    if (!canSubmit) {
+  Future<void> submit() => _settle(isPaid: true);
+
+  /// Closes the bill as unpaid, without a tender.
+  ///
+  /// The same write as [submit] except that the bill is stamped unpaid and its placeholder
+  /// tender is left pending, so no takings figure counts it. Reached straight from the
+  /// review step, because there is no payment to choose and nothing to count.
+  Future<void> settleUnpaid() => _settle(isPaid: false);
+
+  Future<void> _settle({required bool isPaid}) async {
+    if (isPaid ? !canSubmit : !canSettleUnpaid) {
       return;
     }
 
@@ -833,7 +850,11 @@ class CheckoutController extends ChangeNotifier {
     final BillSettlement settlement = _settlement ??= BillSettlement.fromCart(
       cart: _cart,
       orderType: _orderType,
-      paymentMethod: _paymentMethod!,
+      // A paid bill carries the chosen method. An unpaid one carries a placeholder:
+      // its tender is pending and is never shown, but the column is not nullable and
+      // the bill's own total is what the row reconciles against.
+      paymentMethod: isPaid ? _paymentMethod! : PaymentMethod.other,
+      isPaid: isPaid,
       // The two inputs to the money block, handed on so the settlement recomputes exactly
       // the figures on screen rather than being told the answer. The rate is the one this
       // flow opened with, which is what gets stamped onto the bill.

@@ -21,6 +21,15 @@ extension SqliteRow on Map<String, Object?> {
 
   bool requireBool(String column) => requireInt(column) != 0;
 
+  /// Reads an INTEGER 0/1 flag, falling back when the column is absent or NULL.
+  ///
+  /// Used by columns added after a table was first created, where an older row has no
+  /// meaningful value and the fallback states what is known about it.
+  bool optionalBool(String column, {bool fallback = false}) {
+    final int? value = this[column] as int?;
+    return value == null ? fallback : value != 0;
+  }
+
   DateTime requireDateTime(String column) =>
       DateTime.fromMillisecondsSinceEpoch(requireInt(column), isUtc: true);
 

@@ -52,6 +52,7 @@ class Order implements SyncableEntity {
     this.cancelledAt,
     this.cancellationReason,
     this.authorizedBy,
+    this.isPaid = true,
     this.isDeleted = false,
     this.syncState = SyncState.pending,
   });
@@ -87,6 +88,9 @@ class Order implements SyncableEntity {
       cancelledAt: row.optionalDateTime('cancelledAt'),
       cancellationReason: row.optionalString('cancellationReason'),
       authorizedBy: row.optionalString('authorizedBy'),
+      // Optional read with a fallback of `true`: every bill settled before the
+      // column existed was paid, so that is the truthful answer for it.
+      isPaid: row.optionalBool('isPaid', fallback: true),
       createdAt: row.requireDateTime(SyncColumns.createdAt),
       updatedAt: row.requireDateTime(SyncColumns.updatedAt),
       isDeleted: row.requireBool(SyncColumns.isDeleted),
@@ -159,6 +163,16 @@ class Order implements SyncableEntity {
   /// The identifier of the manager who authorized the cancellation.
   final String? authorizedBy;
 
+  /// True when the money for this bill was taken at settlement.
+  ///
+  /// False for a bill deliberately marked unpaid at the counter. Stored so a reprint
+  /// and a cloud restore both still say whether the bill was paid, and so a report can
+  /// separate money in the till from credit given.
+  final bool isPaid;
+
+  /// `Paid` or `Unpaid`, for the receipt and the bill screens.
+  String get paymentStatusLabel => isPaid ? 'Paid' : 'Unpaid';
+
   final DateTime createdAt;
 
   @override
@@ -200,6 +214,7 @@ class Order implements SyncableEntity {
     DateTime? cancelledAt,
     String? cancellationReason,
     String? authorizedBy,
+    bool? isPaid,
     DateTime? updatedAt,
     bool? isDeleted,
     SyncState? syncState,
@@ -223,6 +238,7 @@ class Order implements SyncableEntity {
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancellationReason: cancellationReason ?? this.cancellationReason,
       authorizedBy: authorizedBy ?? this.authorizedBy,
+      isPaid: isPaid ?? this.isPaid,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -255,6 +271,7 @@ class Order implements SyncableEntity {
       'cancelledAt': cancelledAt == null ? null : SqliteValue.fromDateTime(cancelledAt!),
       'cancellationReason': cancellationReason,
       'authorizedBy': authorizedBy,
+      'isPaid': SqliteValue.fromBool(isPaid),
     };
   }
 }

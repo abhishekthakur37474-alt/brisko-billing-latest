@@ -54,6 +54,7 @@ class BillSettlement {
     required this.createdAt,
     required List<OrderItem> items,
     required List<OrderItemOption> itemOptions,
+    this.isPaid = true,
     this.customerName,
     this.customerPhone,
     this.customerAddress,
@@ -83,6 +84,7 @@ class BillSettlement {
     required PaymentMethod paymentMethod,
     BillDiscount discount = BillDiscount.none,
     GstRate taxRate = GstRate.zero,
+    bool isPaid = true,
     String? customerName,
     String? customerPhone,
     String? customerAddress,
@@ -147,6 +149,7 @@ class BillSettlement {
       totals: totals,
       items: items,
       itemOptions: itemOptions,
+      isPaid: isPaid,
       payment: Payment(
         id: EntityId.generate(prefix: 'pay'),
         orderId: orderId,
@@ -155,7 +158,11 @@ class BillSettlement {
         // what is recorded as collected against the bill is the bill.
         amount: totals.total,
         reference: reference,
-        status: CheckoutTransition.settledPaymentStatus,
+        // Completed when the money was taken, pending when the cashier deliberately
+        // left the bill unpaid. The amount is the same either way: it is what is due.
+        status: isPaid
+            ? CheckoutTransition.settledPaymentStatus
+            : CheckoutTransition.unpaidPaymentStatus,
         createdAt: createdAt,
         updatedAt: createdAt,
       ),
@@ -213,6 +220,12 @@ class BillSettlement {
   }
 
   final String? notes;
+
+  /// True when the money for this bill was taken at settlement.
+  ///
+  /// False for a bill the cashier deliberately left unpaid. The payment row written for
+  /// such a bill is pending, so nothing derived from settled tenders counts it.
+  final bool isPaid;
 
   final DateTime createdAt;
 
@@ -278,6 +291,7 @@ class BillSettlement {
       discountType: totals.hasDiscount ? totals.discountRule.type.name : null,
       discountValue: totals.hasDiscount ? totals.discountRule.storedValue : 0,
       notes: notes,
+      isPaid: isPaid,
       createdAt: createdAt,
       updatedAt: createdAt,
     );

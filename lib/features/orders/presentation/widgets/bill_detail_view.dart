@@ -676,6 +676,7 @@ class _Header extends StatelessWidget {
             value: controller.customerAddress!,
           ),
         _DetailRow(label: 'Status', value: order.status.label),
+        _DetailRow(label: 'Payment', value: order.paymentStatusLabel),
         if (order.notes != null && order.notes!.trim().isNotEmpty)
           _DetailRow(label: 'Note', value: order.notes!.trim()),
       ],
@@ -797,7 +798,9 @@ class _Totals extends StatelessWidget {
         const SizedBox(height: 8),
         _DetailRow(
           label: 'Paid by',
-          value: method?.label ?? 'No settled payment recorded',
+          value: order.isPaid
+              ? (method?.label ?? 'No settled payment recorded')
+              : 'Unpaid',
         ),
         if (reference != null) _DetailRow(label: 'Reference', value: reference),
         if (!controller.isConsistent) ...<Widget>[

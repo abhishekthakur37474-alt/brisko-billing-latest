@@ -111,10 +111,17 @@ class EscPosDocumentFormatter implements PrintDocumentEncoder {
     builder.separator();
     _totalsBlock(builder, receipt.totals);
 
-    builder.row(
-      'Paid by ${receipt.paymentMethod.label}',
-      'Items ${receipt.totalQuantity}',
-    );
+    if (receipt.isPaid) {
+      builder.row(
+        'Paid by ${receipt.paymentMethod?.label ?? ''}',
+        'Items ${receipt.totalQuantity}',
+      );
+    } else {
+      builder.row('Items ${receipt.totalQuantity}', '');
+      // Marked plainly and in bold: an unpaid bill is the one thing on this paper
+      // somebody has to notice, at the counter and at cash-up.
+      builder.centred('*** UNPAID ***', bold: true);
+    }
 
     if (receipt.hasNotes) {
       builder.blankLine();

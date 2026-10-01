@@ -244,12 +244,25 @@ class _PrimaryAction extends StatelessWidget {
     }
 
     return switch (controller.step) {
-      CheckoutStep.review => FilledButton.icon(
-        onPressed: controller.canProceedToPayment
-            ? controller.goToPayment
-            : null,
-        icon: const Icon(Icons.arrow_forward),
-        label: const Text('Take payment'),
+      CheckoutStep.review => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          OutlinedButton.icon(
+            onPressed: controller.canSettleUnpaid
+                ? controller.settleUnpaid
+                : null,
+            icon: const Icon(Icons.money_off),
+            label: const Text('Unpaid'),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: controller.canProceedToPayment
+                ? controller.goToPayment
+                : null,
+            icon: const Icon(Icons.payments_outlined),
+            label: const Text('Paid'),
+          ),
+        ],
       ),
       CheckoutStep.payment => FilledButton.icon(
         onPressed: controller.canProceedToConfirm

@@ -19,6 +19,7 @@ import 'migrations/m013_rtdb_resync.dart';
 import 'migrations/m014_order_customer_name.dart';
 import 'migrations/m015_spec_menu.dart';
 import 'migrations/m016_order_customer_address.dart';
+import 'migrations/m017_order_payment_status.dart';
 import 'migrations/migration.dart';
 import 'migrations/migration_runner.dart';
 
@@ -51,6 +52,7 @@ class SqliteDatabase {
     const M014OrderCustomerName(),
     const M015SpecMenu(),
     const M016OrderCustomerAddress(),
+    const M017OrderPaymentStatus(),
   ]);
 
   /// File name of the database inside the platform's databases directory.

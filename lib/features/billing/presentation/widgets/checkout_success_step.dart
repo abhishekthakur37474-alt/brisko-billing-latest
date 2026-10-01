@@ -67,12 +67,17 @@ class CheckoutSuccessStep extends StatelessWidget {
                 child: Column(
                   children: <Widget>[
                     _SettledRow(
-                      label: 'Collected',
+                      label: 'Total',
                       value: order.totalAmount.formatted,
                     ),
+                    if (order.isPaid)
+                      _SettledRow(
+                        label: 'Method',
+                        value: controller.paymentMethod?.label ?? 'Paid',
+                      ),
                     _SettledRow(
-                      label: 'Method',
-                      value: controller.paymentMethod!.label,
+                      label: 'Payment',
+                      value: order.paymentStatusLabel,
                     ),
                     _SettledRow(
                       label: 'Order type',

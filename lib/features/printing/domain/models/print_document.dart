@@ -60,7 +60,8 @@ final class CustomerReceipt extends PrintDocument {
     required this.issuedAt,
     required this.lines,
     required this.totals,
-    required this.paymentMethod,
+    this.paymentMethod,
+    this.isPaid = true,
     this.customerName,
     this.customerPhone,
     this.customerAddress,
@@ -84,7 +85,14 @@ final class CustomerReceipt extends PrintDocument {
 
   final CustomerReceiptTotals totals;
 
-  final PaymentMethod paymentMethod;
+  /// How the bill was tendered, or `null` for a bill left unpaid.
+  final PaymentMethod? paymentMethod;
+
+  /// True when the bill was paid at settlement.
+  ///
+  /// False on a bill deliberately left unpaid, which the paper marks so nobody mistakes
+  /// it for a settled one.
+  final bool isPaid;
 
   /// Customer's name, when one was taken. Absent for a walk-in.
   final String? customerName;

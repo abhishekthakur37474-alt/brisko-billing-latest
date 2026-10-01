@@ -124,7 +124,10 @@ class RepositorySalePrintDocumentSource implements SalePrintDocumentSource {
         .where((Payment payment) => payment.status == PaymentStatus.completed)
         .toList(growable: false);
 
-    if (settled.isEmpty) {
+    // A paid bill must have a completed tender behind it, or the receipt would say it
+    // was paid when nothing recorded the money arriving. An unpaid bill is the opposite
+    // case: it deliberately has none, and its receipt says so.
+    if (order.isPaid && settled.isEmpty) {
       return Err<CustomerReceipt>(
         const ValidationFailure(
           'That bill has no settled payment, so a receipt would say it was '
@@ -200,8 +203,10 @@ class RepositorySalePrintDocumentSource implements SalePrintDocumentSource {
         lines: lines,
         totals: totals,
         // The first settled tender. Split payment is a later feature, and when it
-        // arrives this is the line that changes.
-        paymentMethod: settled.first.paymentMethod,
+        // arrives this is the line that changes. Null on an unpaid bill, which has no
+        // tender to name.
+        paymentMethod: settled.isEmpty ? null : settled.first.paymentMethod,
+        isPaid: order.isPaid,
         customerName: order.customerName ?? customer?.name,
         customerPhone: customer?.phone,
         customerAddress: order.customerAddress,

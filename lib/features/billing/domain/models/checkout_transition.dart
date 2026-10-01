@@ -48,6 +48,14 @@ class CheckoutTransition {
   /// Status written for the payment when the bill settles.
   static const PaymentStatus settledPaymentStatus = PaymentStatus.completed;
 
+  /// Status written for the tender of a bill deliberately left unpaid.
+  ///
+  /// A placeholder payment row is written so the bill stays reconcilable against its
+  /// total, but it is left pending: the money has not arrived, so no figure derived
+  /// from settled tenders may count it. `Order.isPaid` is what the receipt and the
+  /// bill screens read to say Unpaid.
+  static const PaymentStatus unpaidPaymentStatus = PaymentStatus.pending;
+
   /// True when moving from [from] to [to] is the transition checkout performs.
   ///
   /// Exists so the rule can be asserted rather than assumed. Checkout is the only
